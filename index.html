@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rhombus Bandwidth Calculator</title>
+<style>
+  :root {
+    --navy:   #1F3864;
+    --blue:   #2E74B5;
+    --lblue:  #DEEAF1;
+    --xlblue: #EBF3FB;
+    --accent: #4472C4;
+    --white:  #fff;
+    --gray:   #f5f7fa;
+    --text:   #1a1a2e;
+    --muted:  #666;
+    --border: #d0d8e4;
+    --green:  #27ae60;
+    --orange: #e67e22;
+    --red:    #c0392b;
+    --r: 10px;
+    --sh: 0 2px 12px rgba(31,56,100,.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--gray); color: var(--text); min-height: 100vh; }
+
+  header {
+    background: var(--navy);
+    padding: 16px 24px;
+    display: flex; align-items: center; gap: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.3);
+  }
+  header h1 { color: #fff; font-size: 1.2rem; font-weight: 700; }
+  header p  { color: rgba(255,255,255,.6); font-size: .78rem; margin-top: 2px; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 22px 16px 60px; }
+
+  .card {
+    background: #fff; border-radius: var(--r);
+    padding: 18px 20px 20px; margin-bottom: 18px;
+    box-shadow: var(--sh); border: 1px solid var(--border);
+  }
+  .card h2 {
+    font-size: .88rem; font-weight: 700; color: var(--navy);
+    margin-bottom: 14px; text-transform: uppercase; letter-spacing: .5px;
+  }
+
+  .traffic-selector {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    margin-bottom: 16px;
+  }
+  .traffic-selector label {
+    font-size: .8rem; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: .4px;
+  }
+  .traffic-btn {
+    padding: 8px 18px; border-radius: 7px; border: 2px solid var(--border);
+    background: #fff; cursor: pointer; font-size: .85rem; font-weight: 600;
+    color: var(--muted); transition: all .16s;
+  }
+  .traffic-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .traffic-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+  .traffic-guide {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px; margin-top: 12px;
+  }
+  .tg-card {
+    background: var(--xlblue); border: 1px solid var(--lblue);
+    border-radius: 8px; padding: 10px 12px; font-size: .78rem;
+  }
+  .tg-card.active-guide { border-color: var(--navy); background: var(--lblue); }
+  .tg-card h4 { color: var(--navy); margin-bottom: 4px; font-size: .82rem; }
+  .tg-card .tg-stats { color: var(--muted); margin-bottom: 4px; }
+  .tg-card .tg-examples { color: var(--text); line-height: 1.4; }
+
+  .cam-table-wrap { overflow-x: auto; }
+  table {
+    width: 100%; border-collapse: collapse; font-size: .82rem;
+  }
+  thead th {
+    background: var(--navy); color: #fff;
+    padding: 8px 10px; text-align: center;
+    font-size: .72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .3px;
+    white-space: nowrap;
+    position: sticky; top: 0; z-index: 2;
+  }
+  thead th:first-child { text-align: left; border-radius: 8px 0 0 0; }
+  thead th:last-child { border-radius: 0 8px 0 0; }
+  tbody td {
+    padding: 7px 10px; text-align: center;
+    border-bottom: 1px solid #eee;
+  }
+  tbody td:first-child { text-align: left; font-weight: 600; color: var(--navy); white-space: nowrap; }
+  tbody tr:hover { background: var(--xlblue); }
+  tbody tr.legacy { opacity: .6; }
+  tbody tr.legacy td:first-child::after {
+    content: ' (Legacy)'; font-size: .68rem; color: var(--muted); font-weight: 400;
+  }
+  .legacy-divider td {
+    background: #f0f0f0; font-size: .72rem; font-weight: 700;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .5px;
+    padding: 6px 10px; text-align: left;
+  }
+  .legacy-divider:hover { background: #f0f0f0 !important; }
+
+  .qty-input {
+    width: 52px; padding: 4px 6px; border: 2px solid var(--border);
+    border-radius: 6px; text-align: center; font-size: .85rem;
+    font-weight: 600; transition: border .14s;
+  }
+  .qty-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(68,114,196,.14); }
+  .qty-input::-webkit-inner-spin-button { opacity: 1; }
+
+  .toggle-cell { cursor: pointer; user-select: none; }
+  .toggle-cell .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: .72rem; font-weight: 700; transition: all .14s;
+  }
+  .pill.on  { background: #d4edda; color: #155724; }
+  .pill.off { background: #f0f0f0; color: #999; }
+  .pill.na  { background: #fff3cd; color: #856404; font-size: .68rem; }
+
+  .num-cell { font-family: 'Courier New', monospace; font-weight: 600; }
+  .num-cell.highlight { color: var(--navy); }
+
+  .summary-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+  }
+  .summary-tile {
+    background: var(--xlblue); border: 1px solid var(--lblue);
+    border-radius: 10px; padding: 16px; text-align: center;
+  }
+  .summary-tile .st-label {
+    font-size: .72rem; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px;
+  }
+  .summary-tile .st-value {
+    font-size: 1.6rem; font-weight: 800; color: var(--navy);
+    font-family: 'Courier New', monospace;
+  }
+  .summary-tile .st-sub {
+    font-size: .72rem; color: var(--muted); margin-top: 2px;
+  }
+  .summary-tile.isp { border-color: var(--green); background: #e8f8f0; }
+  .summary-tile.isp .st-value { color: var(--green); }
+
+  .breakdown-bar {
+    display: flex; height: 28px; border-radius: 8px; overflow: hidden;
+    margin: 14px 0 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,.1);
+  }
+  .bar-seg { transition: width .3s ease; display: flex; align-items: center; justify-content: center; font-size: .68rem; font-weight: 700; color: #fff; min-width: 0; overflow: hidden; }
+  .bar-video { background: var(--navy); }
+  .bar-snap  { background: var(--accent); }
+  .bar-ai    { background: var(--orange); }
+  .breakdown-legend {
+    display: flex; gap: 18px; flex-wrap: wrap; font-size: .78rem;
+  }
+  .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+  .note-box {
+    background: #f9fafc; border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0; padding: 8px 12px;
+    font-size: .78rem; color: var(--muted); line-height: 1.5; margin-top: 10px;
+  }
+
+  .collapsible-hdr {
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    user-select: none;
+  }
+  .collapsible-hdr .arrow { transition: transform .2s; font-size: .7rem; }
+  .collapsible-hdr .arrow.open { transform: rotate(90deg); }
+  .collapsible-body { overflow: hidden; transition: max-height .3s ease; }
+  .collapsible-body.collapsed { max-height: 0 !important; }
+
+  .ref-table { margin-top: 10px; }
+  .ref-table th { background: var(--accent); }
+  .ref-table td { font-size: .78rem; }
+
+  @media(max-width:700px) {
+    .summary-grid { grid-template-columns: 1fr 1fr; }
+    .traffic-guide { grid-template-columns: 1fr; }
+    table { font-size: .74rem; }
+    .qty-input { width: 44px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Rhombus Bandwidth Calculator</h1>
+    <p>Enter camera quantities and enable AI features to calculate total upload bandwidth</p>
+  </div>
+</header>
+
+<main>
+
+<!-- Traffic Profile -->
+<div class="card">
+  <h2>Traffic Profile</h2>
+  <div class="traffic-selector">
+    <label>Scene Activity:</label>
+    <button class="traffic-btn" data-profile="Low" onclick="setProfile('Low')">Low</button>
+    <button class="traffic-btn active" data-profile="Moderate" onclick="setProfile('Moderate')">Moderate</button>
+    <button class="traffic-btn" data-profile="High" onclick="setProfile('High')">High</button>
+  </div>
+  <div class="traffic-guide" id="traffic-guide">
+    <div class="tg-card" data-tg="Low">
+      <h4>Low Traffic</h4>
+      <div class="tg-stats">&lt; 5 persons/hr &middot; &lt; 2 vehicles/hr per FOV</div>
+      <div class="tg-examples">Stairwells, server rooms, storage areas, emergency exits, after-hours monitoring</div>
+    </div>
+    <div class="tg-card active-guide" data-tg="Moderate">
+      <h4>Moderate Traffic</h4>
+      <div class="tg-stats">5 &ndash; 50 persons/hr &middot; 2 &ndash; 10 vehicles/hr per FOV</div>
+      <div class="tg-examples">Office hallways, small retail entrances, side parking lots, break rooms</div>
+    </div>
+    <div class="tg-card" data-tg="High">
+      <h4>High Traffic</h4>
+      <div class="tg-stats">50+ persons/hr &middot; 10+ vehicles/hr per FOV</div>
+      <div class="tg-examples">Main lobbies, busy retail floors, parking garage entrances, warehouses, airports</div>
+    </div>
+  </div>
+  <div class="note-box">
+    FOV note: A lobby with 200 people/hr covered by 4 cameras = ~50 people/hr per camera FOV.
+    Size Face Recognition &amp; LPR to peak traffic, not average.
+  </div>
+</div>
+
+<!-- Camera Configurator -->
+<div class="card">
+  <h2>Camera Configurator</h2>
+  <div class="cam-table-wrap">
+    <table id="cam-table">
+      <thead>
+        <tr>
+          <th>Camera</th>
+          <th>Qty</th>
+          <th>Timelapse</th>
+          <th>Face Recog</th>
+          <th>LPR</th>
+          <th>PPE</th>
+          <th>People / Occ</th>
+          <th>Cross Count</th>
+          <th>Cloud Archive</th>
+          <th>AI Search</th>
+          <th>Base Video<br>(kbps)</th>
+          <th>Snapshot<br>(kbps)</th>
+          <th>AI Overhead<br>(kbps)</th>
+          <th>Total/Cam<br>(kbps)</th>
+          <th>Subtotal<br>(Mbps)</th>
+        </tr>
+      </thead>
+      <tbody id="cam-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Summary Dashboard -->
+<div class="card">
+  <h2>Summary Dashboard</h2>
+  <div class="summary-grid" id="summary-grid">
+    <div class="summary-tile">
+      <div class="st-label">Total Cameras</div>
+      <div class="st-value" id="sum-cams">0</div>
+    </div>
+    <div class="summary-tile">
+      <div class="st-label">Raw Upload</div>
+      <div class="st-value" id="sum-raw">0</div>
+      <div class="st-sub">Mbps</div>
+    </div>
+    <div class="summary-tile isp">
+      <div class="st-label">Recommended ISP Upload</div>
+      <div class="st-value" id="sum-isp">0</div>
+      <div class="st-sub">Mbps (1.5x headroom, rounded to 50)</div>
+    </div>
+  </div>
+
+  <div class="breakdown-bar" id="breakdown-bar">
+    <div class="bar-seg bar-video" id="bar-video"></div>
+    <div class="bar-seg bar-snap" id="bar-snap"></div>
+    <div class="bar-seg bar-ai" id="bar-ai"></div>
+  </div>
+  <div class="breakdown-legend">
+    <span><span class="legend-dot" style="background:var(--navy)"></span> Base Video: <strong id="leg-video">0%</strong></span>
+    <span><span class="legend-dot" style="background:var(--accent)"></span> Snapshots: <strong id="leg-snap">0%</strong></span>
+    <span><span class="legend-dot" style="background:var(--orange)"></span> AI Features: <strong id="leg-ai">0%</strong></span>
+  </div>
+</div>
+
+<!-- Feature Overhead Reference (collapsible) -->
+<div class="card">
+  <div class="collapsible-hdr" onclick="toggleSection('ref-features')">
+    <span class="arrow" id="arrow-ref-features">&#9654;</span>
+    <h2 style="margin-bottom:0">AI Feature Overhead Reference</h2>
+  </div>
+  <div class="collapsible-body collapsed" id="ref-features">
+    <table class="ref-table" style="margin-top:14px">
+      <thead>
+        <tr>
+          <th style="text-align:left">AI Feature</th>
+          <th>Low (kbps)</th>
+          <th>Moderate (kbps)</th>
+          <th>High (kbps)</th>
+          <th>Traffic-Indep?</th>
+          <th style="text-align:left">Notes</th>
+        </tr>
+      </thead>
+      <tbody id="ref-features-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Camera Specs Reference (collapsible) -->
+<div class="card">
+  <div class="collapsible-hdr" onclick="toggleSection('ref-specs')">
+    <span class="arrow" id="arrow-ref-specs">&#9654;</span>
+    <h2 style="margin-bottom:0">Camera Specs Reference</h2>
+  </div>
+  <div class="collapsible-body collapsed" id="ref-specs">
+    <table class="ref-table" style="margin-top:14px">
+      <thead>
+        <tr>
+          <th style="text-align:left">Model</th>
+          <th>Resolution</th>
+          <th>MP</th>
+          <th>Base Video (kbps)</th>
+          <th>Snap Interval (s)</th>
+          <th>Snap (kbps)</th>
+          <th>Lenses</th>
+          <th>Status</th>
+          <th style="text-align:left">Default AI</th>
+        </tr>
+      </thead>
+      <tbody id="ref-specs-body"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<script>
+const CAMERAS = [
+  { model:"DR40", res:"3840x2160", mp:"8.3 MP (4K)", baseKbps:400, snapKbps:9.1, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, LPR", note:"Estimated from product spec" },
+  { model:"R120", res:"1920x1080", mp:"2 MP", baseKbps:315.3, snapKbps:0.9, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, Visual Tamper" },
+  { model:"R150", res:"1920x1080", mp:"2 MP", baseKbps:400, snapKbps:0.9, lenses:1, sold:true, legacy:false, defaultAI:"Object Search" },
+  { model:"R200", res:"2592x1944", mp:"5 MP", baseKbps:400, snapKbps:2.3, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, Face Recognition, Occupancy" },
+  { model:"R230", res:"2592x1456", mp:"3.8 MP", baseKbps:400, snapKbps:6.8, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, Human Loitering" },
+  { model:"R36S", res:"3520x3520", mp:"12.4 MP (360°)", baseKbps:400, snapKbps:6.8, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, Visual Tamper" },
+  { model:"R410", res:"3840x2160", mp:"8.3 MP (4K)", baseKbps:400, snapKbps:9.1, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, Face Recog, People Count, PPE, Cross Count" },
+  { model:"R520", res:"2592x1944", mp:"5 MP", baseKbps:400, snapKbps:5.1, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, Cross Count, Timelapse" },
+  { model:"R540", res:"3840x2160", mp:"8.3 MP (4K)", baseKbps:400, snapKbps:9.1, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, Occupancy, Cross Counting" },
+  { model:"R545", res:"3840x2160", mp:"8.3 MP (4K)", baseKbps:386.7, snapKbps:9.1, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, Face Recog, Color, LPR" },
+  { model:"R600", res:"2592x1944", mp:"5 MP x4 lenses", baseKbps:1597.3, snapKbps:20.4, lenses:4, sold:true, legacy:false, defaultAI:"Object Search, Face Recog, People Count, Cross Count, Timelapse" },
+  { model:"R1",   res:"1280x720", mp:"0.9 MP", baseKbps:96, snapKbps:0.5, lenses:1, sold:false, legacy:true, defaultAI:"Object Search (legacy)" },
+  { model:"R2",   res:"1920x1080", mp:"2 MP", baseKbps:96, snapKbps:0.9, lenses:1, sold:false, legacy:true, defaultAI:"Object Search (legacy)" },
+  { model:"R3",   res:"3008x3008", mp:"9 MP (360°)", baseKbps:400, snapKbps:6.8, lenses:1, sold:false, legacy:true, defaultAI:"Visual Tamper" },
+  { model:"R4",   res:"3840x2160", mp:"8.3 MP (4K)", baseKbps:374, snapKbps:9.1, lenses:1, sold:false, legacy:true, defaultAI:"Object Search, High-Res Detection" },
+  { model:"R170", res:"1920x1080", mp:"2 MP", baseKbps:400, snapKbps:0.9, lenses:1, sold:false, legacy:true, defaultAI:"Object Search" },
+  { model:"R500", res:"3840x2160", mp:"8.3 MP (4K)", baseKbps:382.4, snapKbps:9.1, lenses:1, sold:false, legacy:true, defaultAI:"LPR, Visual Tamper" },
+  { model:"R510", res:"3840x2160", mp:"8.3 MP (4K)", baseKbps:249.5, snapKbps:9.1, lenses:1, sold:false, legacy:true, defaultAI:"Object Search, Visual Tamper" },
+];
+
+const FEATURES = [
+  { name:"Object Search", low:1, mod:3, high:8, indep:false, notes:"Built-in on all modern cameras; bounding boxes + confidence scores per detection" },
+  { name:"Face Recognition", low:8, mod:23, high:60, indep:false, notes:"Embedding (~20 KB) + 256×256 crop per match; scales with foot traffic" },
+  { name:"Person Re-Id", low:5, mod:16, high:40, indep:false, notes:"Reference only — no toggle in calculator" },
+  { name:"People Counting", low:0.1, mod:0.1, high:0.2, indep:true, notes:"Aggregated count uploaded periodically" },
+  { name:"Occupancy Counting", low:0.2, mod:0.3, high:0.5, indep:true, notes:"Per-zone occupancy payload every minute" },
+  { name:"Cross Counting", low:0.3, mod:1, high:3, indep:false, notes:"Directional crossing event per person" },
+  { name:"Color Detection", low:0.2, mod:0.5, high:1, indep:false, notes:"Clothing color tags appended to Object Search events" },
+  { name:"PPE Detection", low:0.5, mod:2, high:6, indep:false, notes:"Vest/helmet/mask compliance flags per detection" },
+  { name:"Human Loitering", low:0.05, mod:0.1, high:0.2, indep:false, notes:"Alert-only; very low event rate" },
+  { name:"Behavior Detection", low:0.05, mod:0.1, high:0.2, indep:false, notes:"Alert-only upload" },
+  { name:"Pose Detection", low:3, mod:11, high:25, indep:false, notes:"Reference only. 17-point skeleton keypoints per person" },
+  { name:"LPR", low:10, mod:40, high:100, indep:false, notes:"Plate image crop (~50 KB) + OCR text; highest cost in parking/drive-through" },
+  { name:"Vehicle Counting", low:0.1, mod:0.1, high:0.2, indep:true, notes:"Aggregated count only" },
+  { name:"Face Counting", low:0.1, mod:0.1, high:0.2, indep:true, notes:"Count only; no embeddings or crops" },
+  { name:"Engagement Counting", low:0.2, mod:0.3, high:0.5, indep:true, notes:"Dwell-time analytics uploaded periodically" },
+  { name:"Timelapse", low:400, mod:400, high:400, indep:true, notes:"Adds a full second video stream 24/7; effectively doubles base video upload" },
+  { name:"Visual Tamper", low:0.02, mod:0.05, high:0.1, indep:false, notes:"Alert-only; negligible bandwidth" },
+  { name:"WDR", low:0, mod:0, high:0, indep:true, notes:"On-device processing only; zero additional upload" },
+  { name:"High-Res Detection (R4)", low:0, mod:0, high:0, indep:true, notes:"Full-res AI inference on-device; no additional upload" },
+  { name:"AI Search", low:5, mod:15, high:40, indep:false, notes:"Frame embeddings + object/scene metadata for footage search" },
+  { name:"Cloud Archiving", low:100, mod:100, high:100, indep:true, notes:"Higher-quality archive tier for extended retention" },
+];
+
+const TOGGLE_COLS = ["timelapse","faceRecog","lpr","ppe","peopleocc","crosscount","cloudarchive","aisearch"];
+const TOGGLE_FEATURES = {
+  timelapse:    "Timelapse",
+  faceRecog:    "Face Recognition",
+  lpr:          "LPR",
+  ppe:          "PPE Detection",
+  peopleocc:    "People Counting",
+  crosscount:   "Cross Counting",
+  cloudarchive: "Cloud Archiving",
+  aisearch:     "AI Search",
+};
+const OVERHEAD_MAP = {
+  timelapse:    FEATURES.find(f=>f.name==="Timelapse"),
+  faceRecog:    FEATURES.find(f=>f.name==="Face Recognition"),
+  lpr:          FEATURES.find(f=>f.name==="LPR"),
+  ppe:          FEATURES.find(f=>f.name==="PPE Detection"),
+  peopleocc:    FEATURES.find(f=>f.name==="People Counting"),
+  crosscount:   FEATURES.find(f=>f.name==="Cross Counting"),
+  cloudarchive: FEATURES.find(f=>f.name==="Cloud Archiving"),
+  aisearch:     FEATURES.find(f=>f.name==="AI Search"),
+};
+const OCC_OVERHEAD = FEATURES.find(f=>f.name==="Occupancy Counting");
+const OBJ_SEARCH   = FEATURES.find(f=>f.name==="Object Search");
+
+let profile = "Moderate";
+let state = CAMERAS.map(c => ({
+  qty: 0,
+  toggles: { timelapse:false, faceRecog:false, lpr:false, ppe:false, peopleocc:false, crosscount:false, cloudarchive:false, aisearch:false }
+}));
+
+function getOverhead(feat) {
+  if (profile==="Low") return feat.low;
+  if (profile==="High") return feat.high;
+  return feat.mod;
+}
+
+function calcAIOverhead(idx) {
+  let oh = getOverhead(OBJ_SEARCH);
+  const s = state[idx];
+  for (const key of TOGGLE_COLS) {
+    if (s.toggles[key]) {
+      oh += getOverhead(OVERHEAD_MAP[key]);
+      if (key === "peopleocc") oh += getOverhead(OCC_OVERHEAD);
+    }
+  }
+  return oh;
+}
+
+function setProfile(p) {
+  profile = p;
+  document.querySelectorAll('.traffic-btn').forEach(b => b.classList.toggle('active', b.dataset.profile===p));
+  document.querySelectorAll('.tg-card').forEach(c => c.classList.toggle('active-guide', c.dataset.tg===p));
+  recalc();
+}
+
+function toggleFeature(camIdx, feat) {
+  state[camIdx].toggles[feat] = !state[camIdx].toggles[feat];
+  recalc();
+}
+
+function onQtyChange(idx, val) {
+  state[idx].qty = Math.max(0, parseInt(val)||0);
+  recalc();
+}
+
+function recalc() {
+  let totalCams=0, totalVideoKbps=0, totalSnapKbps=0, totalAIKbps=0;
+  const tbody = document.getElementById('cam-body');
+  const rows = tbody.querySelectorAll('tr[data-idx]');
+
+  rows.forEach(row => {
+    const idx = parseInt(row.dataset.idx);
+    const cam = CAMERAS[idx];
+    const s = state[idx];
+    const aiOh = calcAIOverhead(idx);
+    const totalPerCam = cam.baseKbps + cam.snapKbps + aiOh;
+    const subtotalKbps = totalPerCam * s.qty;
+    const subtotalMbps = subtotalKbps / 1000;
+
+    TOGGLE_COLS.forEach(key => {
+      const cell = row.querySelector(`[data-toggle="${key}"]`);
+      if (cell) {
+        const pill = cell.querySelector('.pill');
+        pill.className = 'pill ' + (s.toggles[key] ? 'on' : 'off');
+        pill.textContent = s.toggles[key] ? 'ON' : 'OFF';
+      }
+    });
+
+    row.querySelector('.ai-oh').textContent = aiOh.toFixed(1);
+    row.querySelector('.total-cam').textContent = totalPerCam.toFixed(1);
+    row.querySelector('.subtotal').textContent = subtotalMbps.toFixed(2);
+
+    if (s.qty > 0) {
+      totalCams += s.qty;
+      totalVideoKbps += cam.baseKbps * s.qty;
+      totalSnapKbps += cam.snapKbps * s.qty;
+      totalAIKbps += aiOh * s.qty;
+    }
+  });
+
+  const totalKbps = totalVideoKbps + totalSnapKbps + totalAIKbps;
+  const totalMbps = totalKbps / 1000;
+  const ispMbps = Math.ceil(totalMbps * 1.5 / 50) * 50;
+
+  document.getElementById('sum-cams').textContent = totalCams;
+  document.getElementById('sum-raw').textContent = totalMbps.toFixed(1);
+  document.getElementById('sum-isp').textContent = ispMbps || 0;
+
+  if (totalKbps > 0) {
+    const pV = (totalVideoKbps/totalKbps*100);
+    const pS = (totalSnapKbps/totalKbps*100);
+    const pA = (totalAIKbps/totalKbps*100);
+    document.getElementById('bar-video').style.width = pV+'%';
+    document.getElementById('bar-snap').style.width = pS+'%';
+    document.getElementById('bar-ai').style.width = pA+'%';
+    document.getElementById('bar-video').textContent = pV > 8 ? pV.toFixed(0)+'%' : '';
+    document.getElementById('bar-snap').textContent = pS > 8 ? pS.toFixed(0)+'%' : '';
+    document.getElementById('bar-ai').textContent = pA > 8 ? pA.toFixed(0)+'%' : '';
+    document.getElementById('leg-video').textContent = pV.toFixed(1)+'%';
+    document.getElementById('leg-snap').textContent = pS.toFixed(1)+'%';
+    document.getElementById('leg-ai').textContent = pA.toFixed(1)+'%';
+  } else {
+    document.getElementById('bar-video').style.width = '33%';
+    document.getElementById('bar-snap').style.width = '33%';
+    document.getElementById('bar-ai').style.width = '34%';
+    ['bar-video','bar-snap','bar-ai'].forEach(id => document.getElementById(id).textContent = '');
+    document.getElementById('leg-video').textContent = '0%';
+    document.getElementById('leg-snap').textContent = '0%';
+    document.getElementById('leg-ai').textContent = '0%';
+  }
+}
+
+function buildTable() {
+  const tbody = document.getElementById('cam-body');
+  let html = '';
+  let addedLegacyDivider = false;
+
+  CAMERAS.forEach((cam, idx) => {
+    if (cam.legacy && !addedLegacyDivider) {
+      addedLegacyDivider = true;
+      html += `<tr class="legacy-divider"><td colspan="15">Legacy / Discontinued</td></tr>`;
+    }
+    html += `<tr data-idx="${idx}" class="${cam.legacy?'legacy':''}">`;
+    html += `<td>${cam.model}</td>`;
+    html += `<td><input type="number" class="qty-input" min="0" value="0" onchange="onQtyChange(${idx},this.value)" oninput="onQtyChange(${idx},this.value)"></td>`;
+    TOGGLE_COLS.forEach(key => {
+      html += `<td class="toggle-cell" data-toggle="${key}" onclick="toggleFeature(${idx},'${key}')"><span class="pill off">OFF</span></td>`;
+    });
+    html += `<td class="num-cell">${cam.baseKbps.toFixed(1)}</td>`;
+    html += `<td class="num-cell">${cam.snapKbps.toFixed(1)}</td>`;
+    html += `<td class="num-cell ai-oh">0.0</td>`;
+    html += `<td class="num-cell highlight total-cam">0.0</td>`;
+    html += `<td class="num-cell highlight subtotal">0.00</td>`;
+    html += `</tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+function buildFeatureRef() {
+  const tbody = document.getElementById('ref-features-body');
+  tbody.innerHTML = FEATURES.map(f =>
+    `<tr>
+      <td style="text-align:left;font-weight:600">${f.name}</td>
+      <td>${f.low}</td><td>${f.mod}</td><td>${f.high}</td>
+      <td>${f.indep ? 'Yes' : 'No'}</td>
+      <td style="text-align:left;font-size:.74rem;color:var(--muted)">${f.notes}</td>
+    </tr>`
+  ).join('');
+}
+
+function buildSpecsRef() {
+  const tbody = document.getElementById('ref-specs-body');
+  let html = '';
+  let addedDivider = false;
+  CAMERAS.forEach(c => {
+    if (c.legacy && !addedDivider) {
+      addedDivider = true;
+      html += `<tr class="legacy-divider"><td colspan="9">Legacy / Discontinued</td></tr>`;
+    }
+    html += `<tr class="${c.legacy?'legacy':''}">
+      <td style="text-align:left;font-weight:600">${c.model}</td>
+      <td>${c.res}</td><td>${c.mp}</td>
+      <td>${c.baseKbps}</td><td>${c.lenses===4?'240':'varies'}</td>
+      <td>${c.snapKbps}</td><td>${c.lenses}</td>
+      <td>${c.sold?'Current':'Legacy'}</td>
+      <td style="text-align:left;font-size:.74rem">${c.defaultAI}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+function toggleSection(id) {
+  const body = document.getElementById(id);
+  const arrow = document.getElementById('arrow-'+id);
+  body.classList.toggle('collapsed');
+  arrow.classList.toggle('open');
+  if (!body.classList.contains('collapsed')) {
+    body.style.maxHeight = body.scrollHeight + 'px';
+  }
+}
+
+buildTable();
+buildFeatureRef();
+buildSpecsRef();
+recalc();
+</script>
+
+</body>
+</html>
