@@ -385,6 +385,124 @@
   .card:nth-child(3) { animation-delay: .1s; }
   .card:nth-child(4) { animation-delay: .15s; }
   .card:nth-child(5) { animation-delay: .2s; }
+
+  /* Header buttons */
+  .header-actions {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .hdr-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .65rem; font-weight: 600;
+    color: var(--muted);
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 6px;
+    cursor: pointer; transition: all .2s;
+    display: flex; align-items: center; gap: 5px;
+    white-space: nowrap;
+  }
+  .hdr-btn:hover { border-color: var(--border-h); color: var(--text); }
+  .hdr-btn svg { width: 14px; height: 14px; }
+  .hdr-btn.active { border-color: var(--cyan); color: var(--cyan); }
+
+  /* Export dropdown */
+  .export-wrap { position: relative; }
+  .export-menu {
+    position: absolute; top: calc(100% + 6px); right: 0;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 4px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    z-index: 100; min-width: 160px;
+    display: none;
+  }
+  .export-menu.open { display: block; }
+  .export-opt {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: 6px;
+    font-size: .78rem; color: var(--text);
+    cursor: pointer; transition: background .15s;
+    border: none; background: none; width: 100%;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .export-opt:hover { background: var(--surface2); }
+  .export-opt .eo-sub { font-size: .65rem; color: var(--muted); }
+
+  /* Sticky bottom bar */
+  .sticky-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(135deg, #0f1219 0%, #161c2a 100%);
+    border-top: 1px solid var(--border);
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 24px; z-index: 50;
+    transform: translateY(100%);
+    transition: transform .3s cubic-bezier(.22,1,.36,1);
+    backdrop-filter: blur(12px);
+  }
+  .sticky-bar.visible { transform: translateY(0); }
+  .sticky-bar .sb-item {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .72rem;
+  }
+  .sticky-bar .sb-item .sb-lbl {
+    color: var(--dim); text-transform: uppercase;
+    font-size: .58rem; font-weight: 600; letter-spacing: .08em;
+  }
+  .sticky-bar .sb-item .sb-val {
+    color: var(--text); font-weight: 700; font-size: .88rem;
+  }
+  .sticky-bar .sb-item.primary .sb-val { color: var(--cyan); }
+  .sticky-bar .sb-divider {
+    width: 1px; height: 20px; background: var(--border);
+  }
+
+  /* Light mode */
+  body.light {
+    --bg:       #f0f2f5;
+    --surface:  #ffffff;
+    --surface2: #f7f8fa;
+    --border:   #dde1e8;
+    --border-h: #bcc3d0;
+    --text:     #1a1e2e;
+    --muted:    #6b7394;
+    --dim:      #9ca3b8;
+    --cyan:     #009e7e;
+    --cyan-g:   rgba(0,158,126,.08);
+    --cyan-b:   rgba(0,158,126,.2);
+    --blue:     #3a72d6;
+    --orange:   #e07030;
+    --amber:    #d4a020;
+    background-image: none;
+  }
+  body.light header {
+    background: linear-gradient(135deg, #ffffff 0%, #f7f8fa 100%);
+    border-bottom-color: var(--border);
+  }
+  body.light header h1 { color: var(--text); }
+  body.light .logo-mark {
+    box-shadow: 0 0 12px rgba(0,158,126,.15);
+  }
+  body.light .sticky-bar {
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(16px);
+  }
+  body.light .qty-input { background: var(--surface); }
+  body.light .sw { background: var(--surface2); }
+  body.light .card::before {
+    background: linear-gradient(90deg, transparent, rgba(0,158,126,.2), transparent);
+  }
+
+  /* Extra bottom padding for sticky bar */
+  main { padding-bottom: 100px !important; }
+
+  @media(max-width:600px) {
+    .sticky-bar { gap: 12px; padding: 8px 12px; }
+    .sticky-bar .sb-item .sb-val { font-size: .78rem; }
+    .sticky-bar .sb-item .sb-lbl { font-size: .52rem; }
+    .header-actions { gap: 4px; }
+    .hdr-btn span { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -395,8 +513,50 @@
     <h1>Bandwidth Calculator</h1>
     <p>Rhombus camera upload bandwidth estimator</p>
   </div>
-  <div class="header-badge">v1.0 &middot; Live API Data</div>
+  <div class="header-actions">
+    <button class="hdr-btn" id="theme-toggle" onclick="toggleTheme()">
+      <svg id="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      <svg id="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <span>Light</span>
+    </button>
+    <div class="export-wrap">
+      <button class="hdr-btn" onclick="toggleExportMenu()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Export</span>
+      </button>
+      <div class="export-menu" id="export-menu">
+        <button class="export-opt" onclick="exportCSV()">
+          <span>CSV</span>
+          <span class="eo-sub">Spreadsheet-ready</span>
+        </button>
+        <button class="export-opt" onclick="exportPDF()">
+          <span>PDF</span>
+          <span class="eo-sub">Client proposal</span>
+        </button>
+      </div>
+    </div>
+  </div>
 </header>
+
+<!-- Sticky summary bar -->
+<div class="sticky-bar" id="sticky-bar">
+  <div class="sb-item">
+    <span class="sb-lbl">Cameras</span>
+    <span class="sb-val" id="sticky-cams">0</span>
+  </div>
+  <div class="sb-divider"></div>
+  <div class="sb-item">
+    <span class="sb-lbl">Raw</span>
+    <span class="sb-val" id="sticky-raw">0</span>
+    <span style="color:var(--dim);font-size:.6rem">Mbps</span>
+  </div>
+  <div class="sb-divider"></div>
+  <div class="sb-item primary">
+    <span class="sb-lbl">ISP</span>
+    <span class="sb-val" id="sticky-isp">0</span>
+    <span style="color:var(--dim);font-size:.6rem">Mbps</span>
+  </div>
+</div>
 
 <main>
 
@@ -778,6 +938,165 @@ buildTable();
 buildFeatureRef();
 buildSpecsRef();
 recalc();
+
+// === STICKY BAR ===
+const summaryCard = document.querySelectorAll('.card')[2];
+const stickyBar = document.getElementById('sticky-bar');
+const stickyObserver = new IntersectionObserver(([e]) => {
+  stickyBar.classList.toggle('visible', !e.isIntersecting);
+}, { threshold: 0.3 });
+stickyObserver.observe(summaryCard);
+
+// Update sticky bar in recalc — patch it
+const _origRecalc = recalc;
+recalc = function() {
+  _origRecalc();
+  document.getElementById('sticky-cams').textContent = document.getElementById('sum-cams').textContent;
+  document.getElementById('sticky-raw').textContent = document.getElementById('sum-raw').textContent;
+  document.getElementById('sticky-isp').textContent = document.getElementById('sum-isp').textContent;
+};
+recalc();
+
+// === THEME TOGGLE ===
+function toggleTheme() {
+  document.body.classList.toggle('light');
+  const isLight = document.body.classList.contains('light');
+  document.getElementById('theme-icon-dark').style.display = isLight ? 'none' : '';
+  document.getElementById('theme-icon-light').style.display = isLight ? '' : 'none';
+  const btn = document.getElementById('theme-toggle');
+  btn.querySelector('span').textContent = isLight ? 'Dark' : 'Light';
+  btn.classList.toggle('active', isLight);
+  localStorage.setItem('bw-theme', isLight ? 'light' : 'dark');
+}
+if (localStorage.getItem('bw-theme') === 'light') toggleTheme();
+
+// === EXPORT MENU ===
+function toggleExportMenu() {
+  document.getElementById('export-menu').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.export-wrap')) {
+    document.getElementById('export-menu').classList.remove('open');
+  }
+});
+
+// === CSV EXPORT ===
+function exportCSV() {
+  document.getElementById('export-menu').classList.remove('open');
+  const rows = [['Model','Qty','Timelapse','Face Recog','LPR','PPE','People/Occ','Cross Count','Cloud Archive','AI Search','Base Video (kbps)','Snapshot (kbps)','AI Overhead (kbps)','Total/Cam (kbps)','Subtotal (Mbps)']];
+  CAMERAS.forEach((cam, idx) => {
+    const s = state[idx];
+    if (s.qty === 0) return;
+    const aiOh = calcAIOverhead(idx);
+    const perCam = cam.baseKbps + cam.snapKbps + aiOh;
+    rows.push([
+      cam.model, s.qty,
+      s.toggles.timelapse?'ON':'OFF', s.toggles.faceRecog?'ON':'OFF',
+      s.toggles.lpr?'ON':'OFF', s.toggles.ppe?'ON':'OFF',
+      s.toggles.peopleocc?'ON':'OFF', s.toggles.crosscount?'ON':'OFF',
+      s.toggles.cloudarchive?'ON':'OFF', s.toggles.aisearch?'ON':'OFF',
+      cam.baseKbps.toFixed(1), cam.snapKbps.toFixed(1),
+      aiOh.toFixed(1), perCam.toFixed(1), (perCam*s.qty/1000).toFixed(2)
+    ]);
+  });
+  rows.push([]);
+  rows.push(['Traffic Profile', profile]);
+  rows.push(['Total Cameras', document.getElementById('sum-cams').textContent]);
+  rows.push(['Raw Upload (Mbps)', document.getElementById('sum-raw').textContent]);
+  rows.push(['With 1.5x Headroom (Mbps)', document.getElementById('sum-head').textContent]);
+  rows.push(['Recommended ISP (Mbps)', document.getElementById('sum-isp').textContent]);
+
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `rhombus-bandwidth-estimate-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// === PDF EXPORT ===
+function exportPDF() {
+  document.getElementById('export-menu').classList.remove('open');
+  const totalCams = document.getElementById('sum-cams').textContent;
+  const rawMbps = document.getElementById('sum-raw').textContent;
+  const headMbps = document.getElementById('sum-head').textContent;
+  const ispMbps = document.getElementById('sum-isp').textContent;
+  const date = new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'});
+
+  let camRows = '';
+  CAMERAS.forEach((cam, idx) => {
+    const s = state[idx];
+    if (s.qty === 0) return;
+    const aiOh = calcAIOverhead(idx);
+    const perCam = cam.baseKbps + cam.snapKbps + aiOh;
+    const features = [];
+    if (s.toggles.timelapse) features.push('Timelapse');
+    if (s.toggles.faceRecog) features.push('Face Recog');
+    if (s.toggles.lpr) features.push('LPR');
+    if (s.toggles.ppe) features.push('PPE');
+    if (s.toggles.peopleocc) features.push('People/Occ');
+    if (s.toggles.crosscount) features.push('Cross Count');
+    if (s.toggles.cloudarchive) features.push('Cloud Archive');
+    if (s.toggles.aisearch) features.push('AI Search');
+    camRows += `<tr>
+      <td style="font-weight:700">${cam.model}</td>
+      <td style="text-align:center">${s.qty}</td>
+      <td style="font-size:11px;color:#555">${features.length ? features.join(', ') : 'Base only'}</td>
+      <td style="text-align:right;font-family:monospace">${cam.baseKbps.toFixed(1)}</td>
+      <td style="text-align:right;font-family:monospace">${aiOh.toFixed(1)}</td>
+      <td style="text-align:right;font-family:monospace;font-weight:700">${(perCam*s.qty/1000).toFixed(2)}</td>
+    </tr>`;
+  });
+
+  if (!camRows) { alert('Add cameras before exporting.'); return; }
+
+  const html = `<!DOCTYPE html><html><head><title>Rhombus Bandwidth Estimate</title>
+<style>
+  @page { size: letter; margin: 0.6in 0.75in; }
+  body { font-family: Helvetica, Arial, sans-serif; color: #1a1e2e; font-size: 13px; line-height: 1.5; }
+  .header { display: flex; align-items: center; gap: 16px; border-bottom: 3px solid #00d4aa; padding-bottom: 14px; margin-bottom: 20px; }
+  .header h1 { font-size: 20px; margin: 0; color: #1F3864; }
+  .header .sub { font-size: 11px; color: #666; margin-top: 2px; }
+  .logo { width: 36px; height: 36px; background: linear-gradient(135deg, #00d4aa, #009e7e); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: monospace; font-weight: 700; font-size: 13px; color: #fff; }
+  .meta { font-size: 11px; color: #888; margin-bottom: 18px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 22px; }
+  .sum-box { border: 1.5px solid #dde1e8; border-radius: 8px; padding: 12px; text-align: center; }
+  .sum-box.primary { border-color: #00d4aa; background: #f0fdf9; }
+  .sum-box .lbl { font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: #888; font-weight: 700; }
+  .sum-box .val { font-size: 22px; font-weight: 800; font-family: monospace; color: #1F3864; margin: 4px 0 2px; }
+  .sum-box.primary .val { color: #009e7e; }
+  .sum-box .unit { font-size: 10px; color: #999; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+  th { background: #1F3864; color: #fff; padding: 8px 10px; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; text-align: left; }
+  th:nth-child(n+4) { text-align: right; }
+  td { padding: 7px 10px; border-bottom: 1px solid #eee; font-size: 12px; }
+  .profile-badge { display: inline-block; background: #f0fdf9; border: 1px solid #00d4aa; color: #009e7e; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 10px; color: #999; text-align: center; }
+</style></head><body>
+<div class="header">
+  <div class="logo">BW</div>
+  <div><h1>Bandwidth Estimate</h1><div class="sub">Rhombus Camera Upload Bandwidth Calculator</div></div>
+</div>
+<div class="meta">${date} &nbsp;&middot;&nbsp; Traffic Profile: <span class="profile-badge">${profile}</span></div>
+<div class="summary-grid">
+  <div class="sum-box"><div class="lbl">Total Cameras</div><div class="val">${totalCams}</div><div class="unit">devices</div></div>
+  <div class="sum-box"><div class="lbl">Raw Upload</div><div class="val">${rawMbps}</div><div class="unit">Mbps</div></div>
+  <div class="sum-box"><div class="lbl">w/ 1.5× Headroom</div><div class="val">${headMbps}</div><div class="unit">Mbps</div></div>
+  <div class="sum-box primary"><div class="lbl">Recommended ISP</div><div class="val">${ispMbps}</div><div class="unit">Mbps</div></div>
+</div>
+<table>
+  <thead><tr><th>Model</th><th>Qty</th><th>AI Features</th><th>Base (kbps)</th><th>AI (kbps)</th><th>Subtotal (Mbps)</th></tr></thead>
+  <tbody>${camRows}</tbody>
+</table>
+<div class="footer">Generated by Rhombus Bandwidth Calculator &middot; rhombussystems.github.io/rhombus-bandwidth-calculator</div>
+</body></html>`;
+
+  const w = window.open('', '_blank', 'width=850,height=600');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => { w.print(); }, 400);
+}
 </script>
 
 </body>
