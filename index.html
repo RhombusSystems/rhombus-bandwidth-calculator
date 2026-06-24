@@ -185,9 +185,64 @@
     white-space: nowrap;
     position: sticky; top: 0; z-index: 2;
     border-bottom: 1px solid var(--border);
-    cursor: help;
   }
-  thead th:hover { color: var(--accent); }
+  .tip {
+    position: relative;
+    display: inline-block;
+    margin-left: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: .6rem;
+    font-style: italic;
+    text-transform: lowercase;
+    letter-spacing: 0;
+    color: var(--dim);
+    cursor: help;
+    vertical-align: middle;
+    width: 13px; height: 13px;
+    line-height: 13px;
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+  }
+  .tip:hover { color: var(--accent); border-color: var(--accent); }
+  .tip:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .7rem;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+    line-height: 1.4;
+    padding: 8px 10px;
+    border-radius: 6px;
+    white-space: normal;
+    width: max-content;
+    max-width: 220px;
+    z-index: 100;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+  }
+  .tip:hover::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: var(--text);
+    z-index: 100;
+    pointer-events: none;
+  }
+  .tip-r:hover::after { left: auto; right: 0; transform: none; }
+  .tip-r:hover::before { left: auto; right: 4px; transform: none; }
+  .tip-l:hover::after { left: 0; right: auto; transform: none; }
+  .tip-l:hover::before { left: 4px; right: auto; transform: none; }
   thead th:first-child {
     text-align: left; padding-left: 14px;
     border-radius: var(--r) 0 0 0;
@@ -619,21 +674,21 @@
     <table id="cam-table">
       <thead>
         <tr>
-          <th title="Rhombus camera model number">Model</th>
-          <th title="Number of this camera model in the deployment">Qty</th>
-          <th title="Timelapse: full second stream 24/7, roughly doubles base upload (~400 kbps)">TL</th>
-          <th title="Face Recognition: uploads face embeddings (~20 KB) + 256x256 crops per detection. Scales with traffic.">Face</th>
-          <th title="License Plate Recognition: uploads plate crop (~50 KB) + OCR per vehicle. Highest per-event cost.">LPR</th>
-          <th title="PPE Detection: vest/helmet/mask flags per detection. Moderate overhead.">PPE</th>
-          <th title="People + Occupancy Counting: aggregated people counts + per-zone occupancy payloads every minute.">Ppl/Occ</th>
-          <th title="Cross Counting: directional line-crossing event per person. Scales with traffic.">Cross</th>
-          <th title="Cloud Archiving: higher-quality archive tier. Fixed ~100 kbps per camera.">Archive</th>
-          <th title="AI Search: uploads frame embeddings + metadata for natural language search. Scales with traffic.">Search</th>
-          <th title="Base video upload bandwidth (kbps) derived from segment size, flush interval, and codec settings.">Video</th>
-          <th title="Snapshot bandwidth (kbps) from periodic JPEG uploads at the camera's configured interval.">Snap</th>
-          <th title="Total AI feature overhead (kbps) including Object Search (always on) plus any enabled features above.">AI</th>
-          <th title="Total bandwidth per single camera (kbps): base video + snapshots + AI overhead.">Per Cam</th>
-          <th title="Subtotal bandwidth for all cameras of this model (Mbps): per-cam total x quantity / 1000.">Total</th>
+          <th>Model <span class="tip tip-l" data-tip="Rhombus camera model number. Each model has different resolution, bitrate, and snapshot settings that affect base bandwidth.">i</span></th>
+          <th>Qty <span class="tip" data-tip="Number of this camera model in the deployment. Total bandwidth scales linearly with quantity.">i</span></th>
+          <th>TL <span class="tip" data-tip="Timelapse. Streams a full second stream 24/7 for creating timelapse recordings. Must be enabled before creating a timelapse. Roughly doubles base upload (~400 kbps). Enterprise license required.">i</span></th>
+          <th>Face <span class="tip" data-tip="Face Recognition. Detects and identifies faces in the camera's field of view. Uploads cropped face images + embeddings per detection. Bandwidth scales with foot traffic. High bandwidth cost. Enterprise license required.">i</span></th>
+          <th>LPR <span class="tip" data-tip="License Plate Recognition. Identifies and logs license plates passing through the FOV. Uploads cropped plate images + OCR data per vehicle. Highest per-event bandwidth cost. Enterprise license required.">i</span></th>
+          <th>PPE <span class="tip" data-tip="PPE Detection. Detects lack of personal protective equipment (masks, helmets, vests). Moderate bandwidth overhead. Success depends on camera model and placement. Enterprise license required.">i</span></th>
+          <th>Ppl/Occ <span class="tip" data-tip="People Counting &amp; Occupancy. Monitors how many people pass through the camera's FOV and tracks zone occupancy. Uploads aggregated count data every minute. Low bandwidth cost.">i</span></th>
+          <th>Cross <span class="tip" data-tip="Cross Line Counting. Tracks directional line-crossing events per person. Bandwidth scales with foot traffic. Low-to-moderate cost per event.">i</span></th>
+          <th>Archive <span class="tip" data-tip="Cloud Archiving. Backs up footage to the cloud (30, 60, 90, or 180+ days). Included with Enterprise license (30 days); additional tiers purchasable separately. Fixed ~100 kbps per camera. High bandwidth feature.">i</span></th>
+          <th>Search <span class="tip" data-tip="AI Search. Enables natural-language search across footage by uploading frame embeddings and metadata. Bandwidth scales with scene activity. Medium bandwidth cost.">i</span></th>
+          <th>Video <span class="tip" data-tip="Base video upload bandwidth (kbps). Determined by camera resolution, max bitrate, codec, and flush interval. This is the camera's always-on upload cost.">i</span></th>
+          <th>Snap <span class="tip" data-tip="Snapshot bandwidth (kbps). Periodic JPEG uploads at the camera's configured interval (e.g. every 10s). Used for timeline thumbnails and Color Search.">i</span></th>
+          <th>AI <span class="tip" data-tip="Total AI overhead (kbps). Sum of all enabled AI features above, plus Object Search (always on with Professional license). Varies with traffic profile.">i</span></th>
+          <th>Per Cam <span class="tip tip-r" data-tip="Total bandwidth per camera (kbps). Sum of base video + snapshots + AI overhead. This is the upload cost for one camera of this model.">i</span></th>
+          <th>Total <span class="tip tip-r" data-tip="Subtotal for this model (Mbps). Per-camera bandwidth × quantity ÷ 1000. All model subtotals sum to the deployment total.">i</span></th>
         </tr>
       </thead>
       <tbody id="cam-body"></tbody>
