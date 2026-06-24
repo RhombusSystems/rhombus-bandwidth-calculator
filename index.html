@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rhombus Bandwidth Calculator</title>
+<meta name="description" content="Estimate upload bandwidth requirements for Rhombus camera deployments. Configure cameras, AI features, and traffic profiles to calculate ISP recommendations.">
+<meta property="og:title" content="Rhombus Bandwidth Calculator">
+<meta property="og:description" content="Estimate upload bandwidth for Rhombus camera deployments with AI feature overhead calculations.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://rhombussystems.github.io/rhombus-bandwidth-calculator/">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231F3864'/><text x='16' y='23' font-family='Arial,sans-serif' font-size='20' font-weight='700' fill='white' text-anchor='middle'>R</text></svg>">
 <style>
   @font-face {
     font-family: 'DM Sans';
@@ -22,23 +28,23 @@
 </style>
 <style>
   :root {
-    --bg:       #0c0e14;
-    --surface:  #141821;
-    --surface2: #1a1f2e;
-    --border:   #252b3b;
-    --border-h: #3a4260;
-    --text:     #e2e6ef;
-    --muted:    #6b7394;
-    --dim:      #3d4562;
-    --cyan:     #00d4aa;
-    --cyan-g:   rgba(0,212,170,.12);
-    --cyan-b:   rgba(0,212,170,.25);
-    --blue:     #4e8cff;
-    --blue-g:   rgba(78,140,255,.1);
-    --orange:   #ff8c42;
-    --orange-g: rgba(255,140,66,.1);
-    --amber:    #ffc044;
-    --red:      #ff5c5c;
+    --bg:       #f5f7fa;
+    --surface:  #ffffff;
+    --surface2: #eef1f6;
+    --border:   #d0d8e4;
+    --border-h: #a8b5c8;
+    --text:     #1a1e2e;
+    --muted:    #5a6478;
+    --dim:      #8d96a8;
+    --accent:   #1F3864;
+    --accent-g: rgba(31,56,100,.08);
+    --accent-b: rgba(31,56,100,.2);
+    --blue:     #2E74B5;
+    --blue-g:   rgba(46,116,181,.1);
+    --orange:   #e07030;
+    --orange-g: rgba(224,112,48,.1);
+    --amber:    #d4a020;
+    --red:      #d94040;
     --r:        8px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -46,35 +52,31 @@
     font-family: 'DM Sans', sans-serif;
     background: var(--bg); color: var(--text);
     min-height: 100vh;
-    background-image:
-      radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0,212,170,.04) 0%, transparent 60%),
-      repeating-linear-gradient(0deg, transparent, transparent 59px, rgba(255,255,255,.015) 59px, rgba(255,255,255,.015) 60px),
-      repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(255,255,255,.015) 59px, rgba(255,255,255,.015) 60px);
-    background-attachment: fixed;
+    background-image: none;
   }
 
   header {
-    background: linear-gradient(135deg, #0f1219 0%, #161c2a 100%);
+    background: var(--accent);
     border-bottom: 1px solid var(--border);
     padding: 20px 28px;
     display: flex; align-items: center; gap: 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.15);
   }
   .logo-mark {
     width: 36px; height: 36px;
-    background: linear-gradient(135deg, var(--cyan), #00a882);
+    background: rgba(255,255,255,.15);
     border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
     font-family: 'JetBrains Mono', monospace;
-    font-weight: 700; font-size: .9rem; color: var(--bg);
-    box-shadow: 0 0 20px rgba(0,212,170,.2);
+    font-weight: 700; font-size: 1.1rem; color: #fff;
     flex-shrink: 0;
   }
   header h1 {
-    font-size: 1.15rem; font-weight: 700; color: var(--text);
+    font-size: 1.15rem; font-weight: 700; color: #fff;
     letter-spacing: -.02em;
   }
   header p {
-    color: var(--muted); font-size: .78rem; margin-top: 1px;
+    color: rgba(255,255,255,.6); font-size: .78rem; margin-top: 1px;
     font-weight: 300;
   }
   .header-badge {
@@ -101,7 +103,7 @@
     content: '';
     position: absolute; top: 0; left: 0; right: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(0,212,170,.3), transparent);
+    background: linear-gradient(90deg, transparent, rgba(31,56,100,.3), transparent);
   }
   .card h2 {
     font-size: .75rem; font-weight: 700; color: var(--muted);
@@ -112,7 +114,7 @@
   .card h2::before {
     content: '';
     width: 3px; height: 14px;
-    background: var(--cyan);
+    background: var(--accent);
     border-radius: 2px;
     flex-shrink: 0;
   }
@@ -148,11 +150,11 @@
   }
   .traffic-btn:hover { border-color: var(--border-h); }
   .traffic-btn.active {
-    border-color: var(--cyan);
-    background: var(--cyan-g);
-    box-shadow: 0 0 24px rgba(0,212,170,.06), inset 0 0 24px rgba(0,212,170,.03);
+    border-color: var(--accent);
+    background: var(--accent-g);
+    box-shadow: 0 0 24px rgba(31,56,100,.06), inset 0 0 24px rgba(31,56,100,.03);
   }
-  .traffic-btn.active .tb-label { color: var(--cyan); }
+  .traffic-btn.active .tb-label { color: var(--accent); }
   .traffic-btn.active .tb-stats { color: var(--text); }
   .traffic-btn.active .tb-examples { display: block; color: var(--muted); }
 
@@ -202,8 +204,8 @@
     white-space: nowrap;
   }
   tbody tr:hover td { background: rgba(255,255,255,.02); }
-  tbody tr.has-qty td { background: rgba(0,212,170,.03); }
-  tbody tr.has-qty:hover td { background: rgba(0,212,170,.06); }
+  tbody tr.has-qty td { background: rgba(31,56,100,.03); }
+  tbody tr.has-qty:hover td { background: rgba(31,56,100,.06); }
   tbody tr.legacy td { opacity: .45; }
   tbody tr.legacy:hover td { opacity: .7; }
   .legacy-divider td {
@@ -228,8 +230,8 @@
   }
   .qty-input:focus {
     outline: none;
-    border-color: var(--cyan);
-    box-shadow: 0 0 0 3px rgba(0,212,170,.12);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(31,56,100,.12);
   }
   .qty-input::-webkit-inner-spin-button { opacity: .5; }
 
@@ -254,9 +256,9 @@
     transition: all .2s;
   }
   .sw.on {
-    background: var(--cyan);
-    border-color: var(--cyan);
-    box-shadow: 0 0 8px rgba(0,212,170,.3);
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 8px rgba(31,56,100,.3);
   }
   .sw.on::after {
     left: 17px;
@@ -272,7 +274,7 @@
     color: var(--text); font-weight: 600;
   }
   .num-cell.glow {
-    color: var(--cyan);
+    color: var(--accent);
   }
 
   /* Summary Dashboard */
@@ -308,15 +310,15 @@
     margin-top: 4px; letter-spacing: .02em;
   }
   .stat-block.primary {
-    border-color: rgba(0,212,170,.3);
-    background: linear-gradient(135deg, var(--cyan-g), transparent);
+    border-color: rgba(31,56,100,.3);
+    background: linear-gradient(135deg, var(--accent-g), transparent);
   }
-  .stat-block.primary .sb-value { color: var(--cyan); }
+  .stat-block.primary .sb-value { color: var(--accent); }
   .stat-block.primary::after {
     content: '';
     position: absolute; bottom: 0; left: 0; right: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
   }
 
   /* Breakdown bar */
@@ -362,7 +364,7 @@
     border-radius: 4px; border: 1px solid var(--border);
     flex-shrink: 0;
   }
-  .collapsible-hdr .arrow.open { transform: rotate(90deg); background: var(--cyan-g); border-color: rgba(0,212,170,.3); color: var(--cyan); }
+  .collapsible-hdr .arrow.open { transform: rotate(90deg); background: var(--accent-g); border-color: rgba(31,56,100,.3); color: var(--accent); }
   .collapsible-body { overflow: hidden; transition: max-height .3s ease; }
   .collapsible-body.collapsed { max-height: 0 !important; }
 
@@ -409,16 +411,16 @@
   .hdr-btn {
     font-family: 'JetBrains Mono', monospace;
     font-size: .65rem; font-weight: 600;
-    color: var(--muted);
-    background: var(--surface2); border: 1px solid var(--border);
+    color: rgba(255,255,255,.7);
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
     padding: 6px 12px; border-radius: 6px;
     cursor: pointer; transition: all .2s;
     display: flex; align-items: center; gap: 5px;
     white-space: nowrap;
   }
-  .hdr-btn:hover { border-color: var(--border-h); color: var(--text); }
+  .hdr-btn:hover { border-color: rgba(255,255,255,.4); color: #fff; }
   .hdr-btn svg { width: 14px; height: 14px; }
-  .hdr-btn.active { border-color: var(--cyan); color: var(--cyan); }
+  .hdr-btn.active { border-color: rgba(255,255,255,.5); color: #fff; background: rgba(255,255,255,.18); }
 
   /* Export dropdown */
   .export-wrap { position: relative; }
@@ -445,14 +447,14 @@
   /* Sticky bottom bar */
   .sticky-bar {
     position: fixed; bottom: 0; left: 0; right: 0;
-    background: linear-gradient(135deg, #0f1219 0%, #161c2a 100%);
+    background: rgba(255,255,255,.92);
     border-top: 1px solid var(--border);
     padding: 10px 24px;
     display: flex; align-items: center; justify-content: center;
     gap: 24px; z-index: 50;
     transform: translateY(100%);
     transition: transform .3s cubic-bezier(.22,1,.36,1);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
   }
   .sticky-bar.visible { transform: translateY(0); }
   .sticky-bar .sb-item {
@@ -467,45 +469,54 @@
   .sticky-bar .sb-item .sb-val {
     color: var(--text); font-weight: 700; font-size: .88rem;
   }
-  .sticky-bar .sb-item.primary .sb-val { color: var(--cyan); }
+  .sticky-bar .sb-item.primary .sb-val { color: var(--accent); }
   .sticky-bar .sb-divider {
     width: 1px; height: 20px; background: var(--border);
   }
 
-  /* Light mode */
-  body.light {
-    --bg:       #f0f2f5;
-    --surface:  #ffffff;
-    --surface2: #f7f8fa;
-    --border:   #dde1e8;
-    --border-h: #bcc3d0;
-    --text:     #1a1e2e;
+  /* Dark mode */
+  body.dark {
+    --bg:       #0c0e14;
+    --surface:  #141821;
+    --surface2: #1a1f2e;
+    --border:   #252b3b;
+    --border-h: #3a4260;
+    --text:     #e2e6ef;
     --muted:    #6b7394;
-    --dim:      #9ca3b8;
-    --cyan:     #009e7e;
-    --cyan-g:   rgba(0,158,126,.08);
-    --cyan-b:   rgba(0,158,126,.2);
-    --blue:     #3a72d6;
-    --orange:   #e07030;
-    --amber:    #d4a020;
-    background-image: none;
+    --dim:      #3d4562;
+    --accent:   #4e8cff;
+    --accent-g: rgba(78,140,255,.12);
+    --accent-b: rgba(78,140,255,.25);
+    --blue:     #4e8cff;
+    --blue-g:   rgba(78,140,255,.1);
+    --orange:   #ff8c42;
+    --orange-g: rgba(255,140,66,.1);
+    --amber:    #ffc044;
+    --red:      #ff5c5c;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% 0%, rgba(78,140,255,.04) 0%, transparent 60%),
+      repeating-linear-gradient(0deg, transparent, transparent 59px, rgba(255,255,255,.015) 59px, rgba(255,255,255,.015) 60px),
+      repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(255,255,255,.015) 59px, rgba(255,255,255,.015) 60px);
+    background-attachment: fixed;
   }
-  body.light header {
-    background: linear-gradient(135deg, #ffffff 0%, #f7f8fa 100%);
-    border-bottom-color: var(--border);
+  body.dark header {
+    background: linear-gradient(135deg, #0f1219 0%, #161c2a 100%);
+    box-shadow: none;
   }
-  body.light header h1 { color: var(--text); }
-  body.light .logo-mark {
-    box-shadow: 0 0 12px rgba(0,158,126,.15);
+  body.dark .logo-mark {
+    background: rgba(78,140,255,.2);
   }
-  body.light .sticky-bar {
-    background: rgba(255,255,255,.92);
-    backdrop-filter: blur(16px);
+  body.dark .sticky-bar {
+    background: linear-gradient(135deg, #0f1219 0%, #161c2a 100%);
   }
-  body.light .qty-input { background: var(--surface); }
-  body.light .sw { background: var(--surface2); }
-  body.light .card::before {
-    background: linear-gradient(90deg, transparent, rgba(0,158,126,.2), transparent);
+  body.dark .qty-input { background: var(--bg); }
+  body.dark .sw { background: var(--bg); }
+  body.dark .card::before {
+    background: linear-gradient(90deg, transparent, rgba(78,140,255,.3), transparent);
+  }
+  body.dark .export-menu {
+    background: var(--surface);
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
   }
 
   /* Extra bottom padding for sticky bar */
@@ -523,16 +534,16 @@
 <body>
 
 <header>
-  <div class="logo-mark">BW</div>
+  <div class="logo-mark">R</div>
   <div>
     <h1>Bandwidth Calculator</h1>
     <p>Rhombus camera upload bandwidth estimator</p>
   </div>
   <div class="header-actions">
     <button class="hdr-btn" id="theme-toggle" onclick="toggleTheme()">
-      <svg id="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-      <svg id="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      <span>Light</span>
+      <svg id="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg id="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      <span>Dark</span>
     </button>
     <div class="export-wrap">
       <button class="hdr-btn" onclick="toggleExportMenu()">
@@ -717,6 +728,10 @@
   </div>
 </div>
 
+<div class="note-box" style="margin-top:8px;font-size:.7rem;">
+  Estimates are approximate and based on typical conditions. Actual bandwidth may vary with scene complexity, network overhead, and camera configuration. Recommended ISP speed does not account for non-Rhombus network traffic on the same connection.
+</div>
+
 </main>
 
 <script>
@@ -744,7 +759,7 @@ const CAMERAS = [
 const FEATURES = [
   { name:"Object Search", low:1, mod:3, high:8, indep:false, notes:"Built-in; bounding boxes + confidence per detection" },
   { name:"Face Recognition", low:8, mod:23, high:60, indep:false, notes:"Embedding (~20 KB) + 256×256 crop; scales with traffic" },
-  { name:"Person Re-Id", low:5, mod:16, high:40, indep:false, notes:"Reference only — no toggle in calculator" },
+  { name:"Person Re-Id", low:5, mod:16, high:40, indep:false, notes:"Reference only - no toggle in calculator" },
   { name:"People Counting", low:0.1, mod:0.1, high:0.2, indep:true, notes:"Aggregated count, periodic upload" },
   { name:"Occupancy Counting", low:0.2, mod:0.3, high:0.5, indep:true, notes:"Per-zone payload every minute" },
   { name:"Cross Counting", low:0.3, mod:1, high:3, indep:false, notes:"Directional crossing event per person" },
@@ -924,7 +939,7 @@ function buildFeatureRef() {
     `<tr>
       <td style="text-align:left;font-weight:600">${f.name}</td>
       <td class="num-cell">${f.low}</td><td class="num-cell">${f.mod}</td><td class="num-cell">${f.high}</td>
-      <td style="color:${f.indep?'var(--cyan)':'var(--dim)'}">${f.indep?'Yes':'No'}</td>
+      <td style="color:${f.indep?'var(--accent)':'var(--dim)'}">${f.indep?'Yes':'No'}</td>
       <td style="text-align:left;font-size:.72rem;color:var(--muted);font-weight:300">${f.notes}</td>
     </tr>`
   ).join('');
@@ -941,9 +956,9 @@ function buildSpecsRef() {
     html += `<tr class="${c.legacy?'legacy':''}">
       <td style="text-align:left;font-weight:600">${c.model}</td>
       <td>${c.res}</td><td>${c.mp}</td>
-      <td class="num-cell">${c.baseKbps}</td><td class="num-cell">${c.lenses===4?'240':'—'}</td>
+      <td class="num-cell">${c.baseKbps}</td><td class="num-cell">${c.lenses===4?'240':'-'}</td>
       <td class="num-cell">${c.snapKbps}</td><td class="num-cell">${c.lenses}</td>
-      <td style="color:${c.sold?'var(--cyan)':'var(--dim)'}">${c.sold?'Current':'Legacy'}</td>
+      <td style="color:${c.sold?'var(--accent)':'var(--dim)'}">${c.sold?'Current':'Legacy'}</td>
       <td style="text-align:left;font-size:.72rem;font-weight:300">${c.defaultAI}</td>
     </tr>`;
   });
@@ -977,16 +992,16 @@ recalc();
 
 // === THEME TOGGLE ===
 function toggleTheme() {
-  document.body.classList.toggle('light');
-  const isLight = document.body.classList.contains('light');
-  document.getElementById('theme-icon-dark').style.display = isLight ? 'none' : '';
-  document.getElementById('theme-icon-light').style.display = isLight ? '' : 'none';
+  document.body.classList.toggle('dark');
+  const isDark = document.body.classList.contains('dark');
+  document.getElementById('theme-icon-light').style.display = isDark ? 'none' : '';
+  document.getElementById('theme-icon-dark').style.display = isDark ? '' : 'none';
   const btn = document.getElementById('theme-toggle');
-  btn.querySelector('span').textContent = isLight ? 'Dark' : 'Light';
-  btn.classList.toggle('active', isLight);
-  localStorage.setItem('bw-theme', isLight ? 'light' : 'dark');
+  btn.querySelector('span').textContent = isDark ? 'Light' : 'Dark';
+  btn.classList.toggle('active', isDark);
+  localStorage.setItem('bw-theme', isDark ? 'dark' : 'light');
 }
-if (localStorage.getItem('bw-theme') === 'light') toggleTheme();
+if (localStorage.getItem('bw-theme') === 'dark') toggleTheme();
 
 // === EXPORT MENU ===
 function toggleExportMenu() {
@@ -1073,27 +1088,27 @@ function exportPDF() {
 <style>
   @page { size: letter; margin: 0.6in 0.75in; }
   body { font-family: Helvetica, Arial, sans-serif; color: #1a1e2e; font-size: 13px; line-height: 1.5; }
-  .header { display: flex; align-items: center; gap: 16px; border-bottom: 3px solid #00d4aa; padding-bottom: 14px; margin-bottom: 20px; }
+  .header { display: flex; align-items: center; gap: 16px; border-bottom: 3px solid #1F3864; padding-bottom: 14px; margin-bottom: 20px; }
   .header h1 { font-size: 20px; margin: 0; color: #1F3864; }
   .header .sub { font-size: 11px; color: #666; margin-top: 2px; }
-  .logo { width: 36px; height: 36px; background: linear-gradient(135deg, #00d4aa, #009e7e); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: monospace; font-weight: 700; font-size: 13px; color: #fff; }
+  .logo { width: 36px; height: 36px; background: #1F3864; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: monospace; font-weight: 700; font-size: 13px; color: #fff; }
   .meta { font-size: 11px; color: #888; margin-bottom: 18px; }
   .summary-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 22px; }
   .sum-box { border: 1.5px solid #dde1e8; border-radius: 8px; padding: 12px; text-align: center; }
-  .sum-box.primary { border-color: #00d4aa; background: #f0fdf9; }
+  .sum-box.primary { border-color: #2E74B5; background: #eef4fa; }
   .sum-box .lbl { font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: #888; font-weight: 700; }
   .sum-box .val { font-size: 22px; font-weight: 800; font-family: monospace; color: #1F3864; margin: 4px 0 2px; }
-  .sum-box.primary .val { color: #009e7e; }
+  .sum-box.primary .val { color: #2E74B5; }
   .sum-box .unit { font-size: 10px; color: #999; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
   th { background: #1F3864; color: #fff; padding: 8px 10px; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; text-align: left; }
   th:nth-child(n+4) { text-align: right; }
   td { padding: 7px 10px; border-bottom: 1px solid #eee; font-size: 12px; }
-  .profile-badge { display: inline-block; background: #f0fdf9; border: 1px solid #00d4aa; color: #009e7e; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .profile-badge { display: inline-block; background: #eef4fa; border: 1px solid #2E74B5; color: #2E74B5; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
   .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 10px; color: #999; text-align: center; }
 </style></head><body>
 <div class="header">
-  <div class="logo">BW</div>
+  <div class="logo">R</div>
   <div><h1>Bandwidth Estimate</h1><div class="sub">Rhombus Camera Upload Bandwidth Calculator</div></div>
 </div>
 <div class="meta">${date} &nbsp;&middot;&nbsp; Traffic Profile: <span class="profile-badge">${profile}</span></div>
