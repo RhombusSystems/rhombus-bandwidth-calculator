@@ -4,8 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rhombus Bandwidth Calculator</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,300&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 300 700;
+    font-display: swap;
+    src: url(https://fonts.gstatic.com/s/dmsans/v15/rP2tp2ywxg089UriI5-g4vlH9VoD8CmcqZG40F9JadbnoEwAopxhS23PjA.woff2) format('woff2');
+  }
+  @font-face {
+    font-family: 'JetBrains Mono';
+    font-style: normal;
+    font-weight: 400 700;
+    font-display: swap;
+    src: url(https://fonts.gstatic.com/s/jetbrainsmono/v21/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPVmUsaaDhw.woff2) format('woff2');
+  }
+</style>
 <style>
   :root {
     --bg:       #0c0e14;
@@ -220,11 +234,12 @@
   .qty-input::-webkit-inner-spin-button { opacity: .5; }
 
   /* Toggle switches */
-  .toggle-cell { cursor: pointer; user-select: none; padding: 4px !important; }
+  .toggle-cell { cursor: pointer; user-select: none; padding: 4px !important; min-width: 44px; }
   .sw {
     display: inline-flex; align-items: center; justify-content: center;
     width: 36px; height: 20px;
     border-radius: 10px;
+    min-height: 28px;
     background: var(--bg);
     border: 1px solid var(--border);
     position: relative;
@@ -615,7 +630,10 @@
 
 <div class="card">
   <h2>Summary</h2>
-  <div class="summary-strip">
+  <div class="empty-state" id="empty-state" style="text-align:center;padding:18px 12px;color:var(--dim);font-size:.82rem;font-weight:300;display:block;">
+    Set camera quantities above to calculate bandwidth requirements.
+  </div>
+  <div class="summary-strip" id="summary-strip" style="display:none;">
     <div class="stat-block">
       <div class="sb-label">Cameras</div>
       <div class="sb-value" id="sum-cams">0</div>
@@ -638,7 +656,7 @@
     </div>
   </div>
 
-  <div class="breakdown-wrap">
+  <div class="breakdown-wrap" id="breakdown-wrap" style="display:none;">
     <div class="breakdown-bar">
       <div class="bar-seg bar-video" id="bar-video" style="width:33%"></div>
       <div class="bar-seg bar-snap" id="bar-snap" style="width:33%"></div>
@@ -848,6 +866,14 @@ function recalc() {
   document.getElementById('sum-head').textContent = headMbps.toFixed(1);
   document.getElementById('sum-isp').textContent = ispMbps || 0;
 
+  document.getElementById('empty-state').style.display = totalCams > 0 ? 'none' : 'block';
+  document.getElementById('summary-strip').style.display = totalCams > 0 ? '' : 'none';
+  document.getElementById('breakdown-wrap').style.display = totalCams > 0 ? '' : 'none';
+
+  document.getElementById('sticky-cams').textContent = totalCams;
+  document.getElementById('sticky-raw').textContent = totalMbps.toFixed(1);
+  document.getElementById('sticky-isp').textContent = ispMbps || 0;
+
   if (totalKbps > 0) {
     const pV = totalVideoKbps/totalKbps*100;
     const pS = totalSnapKbps/totalKbps*100;
@@ -862,9 +888,9 @@ function recalc() {
     document.getElementById('bar-video').style.width = '33%';
     document.getElementById('bar-snap').style.width = '33%';
     document.getElementById('bar-ai').style.width = '34%';
-    document.getElementById('leg-video').textContent = '—';
-    document.getElementById('leg-snap').textContent = '—';
-    document.getElementById('leg-ai').textContent = '—';
+    document.getElementById('leg-video').textContent = '-';
+    document.getElementById('leg-snap').textContent = '-';
+    document.getElementById('leg-ai').textContent = '-';
   }
 }
 
@@ -947,14 +973,6 @@ const stickyObserver = new IntersectionObserver(([e]) => {
 }, { threshold: 0.3 });
 stickyObserver.observe(summaryCard);
 
-// Update sticky bar in recalc — patch it
-const _origRecalc = recalc;
-recalc = function() {
-  _origRecalc();
-  document.getElementById('sticky-cams').textContent = document.getElementById('sum-cams').textContent;
-  document.getElementById('sticky-raw').textContent = document.getElementById('sum-raw').textContent;
-  document.getElementById('sticky-isp').textContent = document.getElementById('sum-isp').textContent;
-};
 recalc();
 
 // === THEME TOGGLE ===
