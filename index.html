@@ -185,7 +185,9 @@
     white-space: nowrap;
     position: sticky; top: 0; z-index: 2;
     border-bottom: 1px solid var(--border);
+    cursor: help;
   }
+  thead th:hover { color: var(--accent); }
   thead th:first-child {
     text-align: left; padding-left: 14px;
     border-radius: var(--r) 0 0 0;
@@ -617,21 +619,21 @@
     <table id="cam-table">
       <thead>
         <tr>
-          <th>Model</th>
-          <th>Qty</th>
-          <th>TL</th>
-          <th>Face</th>
-          <th>LPR</th>
-          <th>PPE</th>
-          <th>Ppl/Occ</th>
-          <th>Cross</th>
-          <th>Archive</th>
-          <th>Search</th>
-          <th>Video</th>
-          <th>Snap</th>
-          <th>AI</th>
-          <th>Per Cam</th>
-          <th>Total</th>
+          <th title="Rhombus camera model number">Model</th>
+          <th title="Number of this camera model in the deployment">Qty</th>
+          <th title="Timelapse: full second stream 24/7, roughly doubles base upload (~400 kbps)">TL</th>
+          <th title="Face Recognition: uploads face embeddings (~20 KB) + 256x256 crops per detection. Scales with traffic.">Face</th>
+          <th title="License Plate Recognition: uploads plate crop (~50 KB) + OCR per vehicle. Highest per-event cost.">LPR</th>
+          <th title="PPE Detection: vest/helmet/mask flags per detection. Moderate overhead.">PPE</th>
+          <th title="People + Occupancy Counting: aggregated people counts + per-zone occupancy payloads every minute.">Ppl/Occ</th>
+          <th title="Cross Counting: directional line-crossing event per person. Scales with traffic.">Cross</th>
+          <th title="Cloud Archiving: higher-quality archive tier. Fixed ~100 kbps per camera.">Archive</th>
+          <th title="AI Search: uploads frame embeddings + metadata for natural language search. Scales with traffic.">Search</th>
+          <th title="Base video upload bandwidth (kbps) derived from segment size, flush interval, and codec settings.">Video</th>
+          <th title="Snapshot bandwidth (kbps) from periodic JPEG uploads at the camera's configured interval.">Snap</th>
+          <th title="Total AI feature overhead (kbps) including Object Search (always on) plus any enabled features above.">AI</th>
+          <th title="Total bandwidth per single camera (kbps): base video + snapshots + AI overhead.">Per Cam</th>
+          <th title="Subtotal bandwidth for all cameras of this model (Mbps): per-cam total x quantity / 1000.">Total</th>
         </tr>
       </thead>
       <tbody id="cam-body"></tbody>
