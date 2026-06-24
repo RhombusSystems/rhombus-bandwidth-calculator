@@ -205,44 +205,35 @@
     border-radius: 50%;
   }
   .tip:hover { color: var(--accent); border-color: var(--accent); }
-  .tip:hover::after {
-    content: attr(data-tip);
-    position: absolute;
-    bottom: calc(100% + 6px);
-    left: 50%;
-    transform: translateX(-50%);
+  .tip-popup {
+    position: fixed;
     background: var(--text);
     color: var(--bg);
     font-family: 'DM Sans', sans-serif;
     font-size: .7rem;
     font-weight: 400;
-    text-transform: none;
-    letter-spacing: normal;
     line-height: 1.4;
     padding: 8px 10px;
     border-radius: 6px;
     white-space: normal;
     width: max-content;
     max-width: 220px;
-    z-index: 100;
+    z-index: 9999;
     pointer-events: none;
     box-shadow: 0 4px 12px rgba(0,0,0,.15);
+    opacity: 0;
+    transition: opacity .15s;
   }
-  .tip:hover::before {
+  .tip-popup.show { opacity: 1; }
+  .tip-popup::before {
     content: '';
     position: absolute;
-    bottom: calc(100% + 2px);
-    left: 50%;
+    top: -8px;
+    left: var(--arrow-left, 50%);
     transform: translateX(-50%);
     border: 4px solid transparent;
-    border-top-color: var(--text);
-    z-index: 100;
-    pointer-events: none;
+    border-bottom-color: var(--text);
   }
-  .tip-r:hover::after { left: auto; right: 0; transform: none; }
-  .tip-r:hover::before { left: auto; right: 4px; transform: none; }
-  .tip-l:hover::after { left: 0; right: auto; transform: none; }
-  .tip-l:hover::before { left: 4px; right: auto; transform: none; }
   thead th:first-child {
     text-align: left; padding-left: 14px;
     border-radius: var(--r) 0 0 0;
@@ -674,7 +665,7 @@
     <table id="cam-table">
       <thead>
         <tr>
-          <th>Model <span class="tip tip-l" data-tip="Rhombus camera model number. Each model has different resolution, bitrate, and snapshot settings that affect base bandwidth.">i</span></th>
+          <th>Model <span class="tip" data-tip="Rhombus camera model number. Each model has different resolution, bitrate, and snapshot settings that affect base bandwidth.">i</span></th>
           <th>Qty <span class="tip" data-tip="Number of this camera model in the deployment. Total bandwidth scales linearly with quantity.">i</span></th>
           <th>TL <span class="tip" data-tip="Timelapse. Streams a full second stream 24/7 for creating timelapse recordings. Must be enabled before creating a timelapse. Roughly doubles base upload (~400 kbps). Enterprise license required.">i</span></th>
           <th>Face <span class="tip" data-tip="Face Recognition. Detects and identifies faces in the camera's field of view. Uploads cropped face images + embeddings per detection. Bandwidth scales with foot traffic. High bandwidth cost. Enterprise license required.">i</span></th>
@@ -687,8 +678,8 @@
           <th>Video <span class="tip" data-tip="Base video upload bandwidth (kbps). Determined by camera resolution, max bitrate, codec, and flush interval. This is the camera's always-on upload cost.">i</span></th>
           <th>Snap <span class="tip" data-tip="Snapshot bandwidth (kbps). Periodic JPEG uploads at the camera's configured interval (e.g. every 10s). Used for timeline thumbnails and Color Search.">i</span></th>
           <th>AI <span class="tip" data-tip="Total AI overhead (kbps). Sum of all enabled AI features above, plus Object Search (always on with Professional license). Varies with traffic profile.">i</span></th>
-          <th>Per Cam <span class="tip tip-r" data-tip="Total bandwidth per camera (kbps). Sum of base video + snapshots + AI overhead. This is the upload cost for one camera of this model.">i</span></th>
-          <th>Total <span class="tip tip-r" data-tip="Subtotal for this model (Mbps). Per-camera bandwidth × quantity ÷ 1000. All model subtotals sum to the deployment total.">i</span></th>
+          <th>Per Cam <span class="tip" data-tip="Total bandwidth per camera (kbps). Sum of base video + snapshots + AI overhead. This is the upload cost for one camera of this model.">i</span></th>
+          <th>Total <span class="tip" data-tip="Subtotal for this model (Mbps). Per-camera bandwidth × quantity ÷ 1000. All model subtotals sum to the deployment total.">i</span></th>
         </tr>
       </thead>
       <tbody id="cam-body"></tbody>
@@ -1187,6 +1178,32 @@ function exportPDF() {
   w.document.close();
   setTimeout(() => { w.print(); }, 400);
 }
+
+// Tooltip system — appended to body to escape overflow clipping
+(() => {
+  const popup = document.createElement('div');
+  popup.className = 'tip-popup';
+  document.body.appendChild(popup);
+  document.addEventListener('mouseenter', e => {
+    const t = e.target.closest('.tip');
+    if (!t) return;
+    popup.textContent = t.dataset.tip;
+    popup.classList.add('show');
+    const r = t.getBoundingClientRect();
+    popup.style.left = '0'; popup.style.top = '0';
+    const pw = popup.offsetWidth, ph = popup.offsetHeight;
+    let left = r.left + r.width / 2 - pw / 2;
+    if (left < 8) left = 8;
+    if (left + pw > window.innerWidth - 8) left = window.innerWidth - 8 - pw;
+    popup.style.left = left + 'px';
+    popup.style.top = (r.bottom + 6) + 'px';
+    const arrowLeft = r.left + r.width / 2 - left;
+    popup.style.setProperty('--arrow-left', arrowLeft + 'px');
+  }, true);
+  document.addEventListener('mouseleave', e => {
+    if (e.target.closest('.tip')) popup.classList.remove('show');
+  }, true);
+})();
 </script>
 
 </body>
