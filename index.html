@@ -323,6 +323,13 @@
   .num-cell.glow {
     color: var(--accent);
   }
+  .num-cell:has(.unit) { white-space: nowrap; }
+  .unit {
+    font-size: .55rem;
+    font-weight: 400;
+    color: var(--dim);
+    letter-spacing: .02em;
+  }
 
   /* Summary Dashboard */
   .summary-strip {
@@ -904,10 +911,10 @@ function recalc() {
       }
     });
 
-    row.querySelector('.ai-oh').textContent = aiOh.toFixed(1);
-    row.querySelector('.total-cam').textContent = totalPerCam.toFixed(1);
+    row.querySelector('.ai-oh').innerHTML = aiOh.toFixed(1) + ' <span class="unit">kbps</span>';
+    row.querySelector('.total-cam').innerHTML = totalPerCam.toFixed(1) + ' <span class="unit">kbps</span>';
     const sub = row.querySelector('.subtotal');
-    sub.textContent = subtotalMbps.toFixed(2);
+    sub.innerHTML = subtotalMbps.toFixed(2) + ' <span class="unit">Mbps</span>';
     sub.classList.toggle('glow', s.qty > 0 && subtotalMbps > 0);
 
     if (s.qty > 0) {
@@ -971,11 +978,11 @@ function buildTable() {
     TOGGLE_COLS.forEach(key => {
       html += `<td class="toggle-cell" data-toggle="${key}" onclick="toggleFeature(${idx},'${key}')"><span class="sw"></span></td>`;
     });
-    html += `<td class="num-cell">${cam.baseKbps.toFixed(1)}</td>`;
-    html += `<td class="num-cell">${cam.snapKbps.toFixed(1)}</td>`;
-    html += `<td class="num-cell ai-oh">0.0</td>`;
-    html += `<td class="num-cell highlight total-cam">0.0</td>`;
-    html += `<td class="num-cell highlight subtotal">0.00</td>`;
+    html += `<td class="num-cell">${cam.baseKbps.toFixed(1)} <span class="unit">kbps</span></td>`;
+    html += `<td class="num-cell">${cam.snapKbps.toFixed(1)} <span class="unit">kbps</span></td>`;
+    html += `<td class="num-cell ai-oh">0.0 <span class="unit">kbps</span></td>`;
+    html += `<td class="num-cell highlight total-cam">0.0 <span class="unit">kbps</span></td>`;
+    html += `<td class="num-cell highlight subtotal">0.00 <span class="unit">Mbps</span></td>`;
     html += `</tr>`;
   });
   tbody.innerHTML = html;
