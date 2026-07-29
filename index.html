@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rhombus Bandwidth Calculator</title>
-<meta name="description" content="Estimate upload bandwidth requirements for Rhombus camera deployments. Configure cameras, AI features, and traffic profiles to calculate ISP recommendations.">
+<meta name="description" content="Size upload bandwidth for Rhombus camera deployments using measured production data. Per-model encoder ceilings, cloud archiving impact, and scene activity factors derived from real fleet traffic.">
 <meta property="og:title" content="Rhombus Bandwidth Calculator">
-<meta property="og:description" content="Estimate upload bandwidth for Rhombus camera deployments with AI feature overhead calculations.">
+<meta property="og:description" content="Upload bandwidth sizing for Rhombus camera deployments, built on measured production traffic rather than spec-sheet caps.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://rhombussystems.github.io/rhombus-bandwidth-calculator/">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231F3864'/><text x='16' y='23' font-family='Arial,sans-serif' font-size='20' font-weight='700' fill='white' text-anchor='middle'>R</text></svg>">
@@ -641,27 +641,21 @@
 <main>
 
 <div class="card">
-  <h2>Traffic Profile</h2>
-  <div class="traffic-row">
-    <button class="traffic-btn" data-profile="Low" onclick="setProfile('Low')">
-      <span class="tb-label">Low</span>
-      <span class="tb-stats">&lt; 5 persons/hr &middot; &lt; 2 vehicles/hr</span>
-      <span class="tb-examples">Stairwells, server rooms, storage areas, emergency exits, after-hours</span>
-    </button>
-    <button class="traffic-btn active" data-profile="Moderate" onclick="setProfile('Moderate')">
-      <span class="tb-label">Moderate</span>
-      <span class="tb-stats">5 &ndash; 50 persons/hr &middot; 2 &ndash; 10 vehicles/hr</span>
-      <span class="tb-examples">Office hallways, small retail, side parking, break rooms</span>
-    </button>
-    <button class="traffic-btn" data-profile="High" onclick="setProfile('High')">
-      <span class="tb-label">High</span>
-      <span class="tb-stats">50+ persons/hr &middot; 10+ vehicles/hr</span>
-      <span class="tb-examples">Main lobbies, busy retail, parking garages, warehouses, airports</span>
-    </button>
-  </div>
+  <h2>Scene Activity</h2>
+  <div class="traffic-row" id="traffic-row"></div>
   <div class="note-box">
-    FOV note: 200 people/hr across 4 cameras = ~50/hr per FOV.
-    Size Face Recognition &amp; LPR to peak traffic, not average.
+    <strong>Cloud Archiving is the biggest lever, by far.</strong> Across 40 cameras of
+    measured production traffic, cameras with archiving on uploaded a median
+    1047&nbsp;kbps; cameras with it off uploaded 58&nbsp;kbps &mdash; an 18&times; difference.
+    Retention <em>length</em> (30&nbsp;d vs 270&nbsp;d) made no measurable difference, because it
+    governs how long footage is stored, not how much is sent. Toggle it per model in
+    the Archive column below.
+  </div>
+  <div class="note-box" style="margin-top:8px">
+    Scene activity is the second lever: it sets what fraction of a camera's encoder
+    ceiling actually goes out. A static server room realised 0.1% of its ceiling; a
+    busy entrance realised 100%. FOV note &mdash; 200 people/hr across 4 cameras is
+    ~50/hr per FOV, so rate each camera on its own view.
   </div>
 </div>
 
@@ -671,21 +665,22 @@
     <table id="cam-table">
       <thead>
         <tr>
-          <th>Model <span class="tip" data-tip="Rhombus camera model number. Each model has different resolution, bitrate, and snapshot settings that affect base bandwidth.">i</span></th>
+          <th>Model <span class="tip" data-tip="Rhombus camera model. Determines the encoder tier ladder and the number of video sources, which together set the bandwidth ceiling.">i</span></th>
           <th>Qty <span class="tip" data-tip="Number of this camera model in the deployment. Total bandwidth scales linearly with quantity.">i</span></th>
-          <th>TL <span class="tip" data-tip="Timelapse. Streams a full second stream 24/7 for creating timelapse recordings. Must be enabled before creating a timelapse. Roughly doubles base upload (~400 kbps). Enterprise license required.">i</span></th>
-          <th>Face <span class="tip" data-tip="Face Recognition. Detects and identifies faces in the camera's field of view. Uploads cropped face images + embeddings per detection. Bandwidth scales with foot traffic. High bandwidth cost. Enterprise license required.">i</span></th>
-          <th>LPR <span class="tip" data-tip="License Plate Recognition. Identifies and logs license plates passing through the FOV. Uploads cropped plate images + OCR data per vehicle. Highest per-event bandwidth cost. Enterprise license required.">i</span></th>
-          <th>PPE <span class="tip" data-tip="PPE Detection. Detects lack of personal protective equipment (masks, helmets, vests). Moderate bandwidth overhead. Success depends on camera model and placement. Enterprise license required.">i</span></th>
-          <th>Ppl/Occ <span class="tip" data-tip="People Counting &amp; Occupancy. Monitors how many people pass through the camera's FOV and tracks zone occupancy. Uploads aggregated count data every minute. Low bandwidth cost.">i</span></th>
-          <th>Cross <span class="tip" data-tip="Cross Line Counting. Tracks directional line-crossing events per person. Bandwidth scales with foot traffic. Low-to-moderate cost per event.">i</span></th>
-          <th>Archive <span class="tip" data-tip="Cloud Archiving. Backs up footage to the cloud (30, 60, 90, or 180+ days). Included with Enterprise license (30 days); additional tiers purchasable separately. Fixed ~100 kbps per camera. High bandwidth feature.">i</span></th>
-          <th>Search <span class="tip" data-tip="AI Search. Enables natural-language search across footage by uploading frame embeddings and metadata. Bandwidth scales with scene activity. Medium bandwidth cost.">i</span></th>
-          <th>Video <span class="tip" data-tip="Base video upload bandwidth (kbps). Determined by camera resolution, max bitrate, codec, and flush interval. This is the camera's always-on upload cost.">i</span></th>
-          <th>Snap <span class="tip" data-tip="Snapshot bandwidth (kbps). Periodic JPEG uploads at the camera's configured interval (e.g. every 10s). Used for timeline thumbnails and Color Search.">i</span></th>
-          <th>AI <span class="tip" data-tip="Total AI overhead (kbps). Sum of all enabled AI features above, plus Object Search (always on with Professional license). Varies with traffic profile.">i</span></th>
-          <th>Per Cam <span class="tip" data-tip="Total bandwidth per camera (kbps). Sum of base video + snapshots + AI overhead. This is the upload cost for one camera of this model.">i</span></th>
-          <th>Total <span class="tip" data-tip="Subtotal for this model (Mbps). Per-camera bandwidth × quantity ÷ 1000. All model subtotals sum to the deployment total.">i</span></th>
+          <th>Archive <span class="tip" data-tip="Cloud Archiving. THE dominant bandwidth variable. With it on, cameras upload continuously; with it off they upload only on events. Measured across 40 production cameras: 1047 kbps median on vs 58 kbps off — an 18x difference. Retention length (30/60/90/270 days) does not change upload, only how long footage is kept. Included with Enterprise at 30 days.">i</span></th>
+          <th>TL <span class="tip" data-tip="Timelapse. Runs a second continuous stream 24/7. Modelled as adding this model's own idle tier (~1200 kbps on most models), not a flat number. Enterprise license required.">i</span></th>
+          <th>Face <span class="tip" data-tip="Face Recognition. Uploads a cropped face image plus an embedding per detection. Estimate only — per-feature cost cannot be separated from scene activity in the byte data.">i</span></th>
+          <th>LPR <span class="tip" data-tip="License Plate Recognition. Uploads a plate crop plus OCR data per vehicle; the highest per-event cost. Estimate only — not separately validated.">i</span></th>
+          <th>PPE <span class="tip" data-tip="PPE Detection. Vest/helmet/mask flags per detection. Estimate only — not separately validated.">i</span></th>
+          <th>Ppl/Occ <span class="tip" data-tip="People Counting & Occupancy. Aggregated counts uploaded periodically. Negligible bandwidth. Estimate only.">i</span></th>
+          <th>Cross <span class="tip" data-tip="Cross Line Counting. One directional crossing event per person. Estimate only — not separately validated.">i</span></th>
+          <th>Search <span class="tip" data-tip="AI Search. Uploads frame embeddings and metadata for natural-language search. Estimate only — not separately validated.">i</span></th>
+          <th>Ceiling <span class="tip" data-tip="Bandwidth ceiling (kbps) = active encoder tier x number of video sources. Measured from VIDEO_AGENT_LOG dash-quality lines. A camera physically cannot exceed this; peak hours approach it.">i</span></th>
+          <th>Act% <span class="tip" data-tip="Activity factor: the share of the ceiling actually uploaded, from the Scene Activity setting and the Archive toggle. Derived from quartile bands of 40 production cameras. Ranged 0.1% (static server room) to 100% (busy entrance) in the measured fleet.">i</span></th>
+          <th>Events <span class="tip" data-tip="Event metadata plus Timelapse (kbps). AI feature overhead is an unvalidated estimate; Timelapse adds this model's idle tier.">i</span></th>
+          <th>Avg/Cam <span class="tip" data-tip="Sustained average per camera (kbps) = ceiling x activity + event overhead. This is the number to use for monthly data volume.">i</span></th>
+          <th>Peak/Cam <span class="tip" data-tip="Busy-hour peak per camera (kbps). Average scaled by the measured p95/average ratio (2.18 with archiving, 2.99 without), capped at the ceiling. Size the uplink off this, not the average.">i</span></th>
+          <th>Total <span class="tip" data-tip="Sustained subtotal for this model (Mbps) = average per camera x quantity / 1000.">i</span></th>
         </tr>
       </thead>
       <tbody id="cam-body"></tbody>
@@ -705,21 +700,23 @@
       <div class="sb-unit">total</div>
     </div>
     <div class="stat-block">
-      <div class="sb-label">Raw Upload</div>
+      <div class="sb-label">Sustained Average</div>
       <div class="sb-value" id="sum-raw">0</div>
       <div class="sb-unit">Mbps</div>
     </div>
     <div class="stat-block">
-      <div class="sb-label">w/ 1.5&times; Headroom</div>
-      <div class="sb-value" id="sum-head">0</div>
+      <div class="sb-label">Busy-Hour Peak</div>
+      <div class="sb-value" id="sum-peak">0</div>
       <div class="sb-unit">Mbps</div>
     </div>
     <div class="stat-block primary">
       <div class="sb-label">Recommended ISP</div>
       <div class="sb-value" id="sum-isp">0</div>
-      <div class="sb-unit">Mbps (rounded to 50)</div>
+      <div class="sb-unit">Mbps (peak &times;1.3, to 50)</div>
     </div>
   </div>
+
+  <div class="note-box" id="arch-note" style="margin-top:12px"></div>
 
   <div class="breakdown-wrap" id="breakdown-wrap" style="display:none;">
     <div class="breakdown-bar">
@@ -729,8 +726,8 @@
     </div>
     <div class="breakdown-legend">
       <span><span class="legend-dot" style="background:var(--blue)"></span>Base Video <strong id="leg-video">0%</strong></span>
-      <span><span class="legend-dot" style="background:var(--amber)"></span>Snapshots <strong id="leg-snap">0%</strong></span>
-      <span><span class="legend-dot" style="background:var(--orange)"></span>AI Features <strong id="leg-ai">0%</strong></span>
+      <span><span class="legend-dot" style="background:var(--amber)"></span>Timelapse <strong id="leg-snap">0%</strong></span>
+      <span><span class="legend-dot" style="background:var(--orange)"></span>Event Metadata <strong id="leg-ai">0%</strong></span>
     </div>
   </div>
 </div>
@@ -738,9 +735,16 @@
 <div class="card">
   <div class="collapsible-hdr" onclick="toggleSection('ref-features')">
     <span class="arrow" id="arrow-ref-features">&#9654;</span>
-    <h2 style="margin-bottom:0">AI Feature Overhead Reference</h2>
+    <h2 style="margin-bottom:0">AI Event Overhead Reference (estimates)</h2>
   </div>
   <div class="collapsible-body collapsed" id="ref-features">
+    <div class="note-box" style="margin-top:14px">
+      These figures are <strong>not validated</strong>. The bandwidth export reports one
+      total per device, so per-feature cost cannot be separated from scene activity &mdash;
+      both are absorbed into the activity factor. They are retained as
+      order-of-magnitude payload estimates. Isolating any one feature needs an A/B on a
+      single camera.
+    </div>
     <table class="ref-table" style="margin-top:14px">
       <thead>
         <tr>
@@ -760,7 +764,7 @@
 <div class="card">
   <div class="collapsible-hdr" onclick="toggleSection('ref-specs')">
     <span class="arrow" id="arrow-ref-specs">&#9654;</span>
-    <h2 style="margin-bottom:0">Camera Specs Reference</h2>
+    <h2 style="margin-bottom:0">Measured Encoder Ladders</h2>
   </div>
   <div class="collapsible-body collapsed" id="ref-specs">
     <table class="ref-table" style="margin-top:14px">
@@ -769,12 +773,12 @@
           <th style="text-align:left">Model</th>
           <th>Resolution</th>
           <th>MP</th>
-          <th>Video (kbps)</th>
-          <th>Snap Int.</th>
-          <th>Snap (kbps)</th>
-          <th>Lenses</th>
-          <th>Status</th>
-          <th style="text-align:left">Default AI</th>
+          <th>Idle (kbps)</th>
+          <th>Active (kbps)</th>
+          <th>Sources</th>
+          <th>Ceiling (kbps)</th>
+          <th>Evidence</th>
+          <th style="text-align:left">Measurement Note</th>
         </tr>
       </thead>
       <tbody id="ref-specs-body"></tbody>
@@ -783,33 +787,110 @@
 </div>
 
 <div class="note-box" style="margin-top:8px;font-size:.7rem;">
-  Estimates are approximate and based on typical conditions. Actual bandwidth may vary with scene complexity, network overhead, and camera configuration. Recommended ISP speed does not account for non-Rhombus network traffic on the same connection.
+  <strong>Provenance.</strong> Encoder ladders come from <code>VIDEO_AGENT_LOG</code> dash-quality
+  transitions on one online unit of each of 17 models, ~21&nbsp;h per model. Activity factors
+  and peak ratios come from a 7-day hourly bandwidth export covering 41 cameras and 7 DR40
+  readers. Fifteen devices appear in both datasets, and on those the log-derived ceiling
+  predicted actual bytes within &plusmn;17% wherever the scene was active.
+  <br><br>
+  <strong>Known limits.</strong> All measurements come from one organisation, so per-model
+  sample sizes are small (1&ndash;5 cameras). AI feature overhead is not separately validated.
+  Activity is the single largest source of error: two identical cameras in the same building
+  differed by 500&times; purely on scene content, so rate each camera on its own view rather
+  than applying one profile site-wide. Recommended ISP speed does not account for
+  non-Rhombus traffic sharing the uplink.
 </div>
 
 </main>
 
 <script>
+/* ─────────────────────────────────────────────────────────────────────────────
+   MEASURED MODEL — derived 2026-07-29 from Rhombus Enterprises production data.
+
+   Two independent sources, cross-validated on 15 of the same physical cameras:
+
+     1. VIDEO_AGENT_LOG "Adjust dash quality to <qp>@<kbps> ... vsrc: N" lines,
+        pulled from one online unit of each of 17 models, ~21 h window each.
+        Gives each model's encoder tier ladder. ("dash" is the cloud upload
+        stream; "realtime" is live-view only and is excluded.)
+
+     2. Console hourly bandwidth export, 7 days, 41 cameras + 7 DR40 readers.
+        Gives actual billed upload bytes.
+
+   What the two sources together establish:
+
+     - The dash ladder is a CEILING, not a rate. A camera sits at an idle tier
+       (~1200 kbps, qp33) and jumps to an active tier (~3000 kbps, qp26) when
+       rmain sees motion.
+     - Realized bytes = ceiling × activity, and activity ran 0.001 to 1.06
+       across the fleet. A static scene emits almost nothing no matter what the
+       encoder is told: a server-room R4 targeting 1204 kbps shipped 4 kbps.
+     - Cloud Archiving on/off is the dominant variable — an 18× median swing
+       (1047 vs 58 kbps). Retention DURATION (30 d vs 270 d) has no real effect;
+       it governs how long footage is stored, not how much is uploaded.
+
+   The previous model used a flat ~400 kbps per camera from
+   segment_max_bytes × 8 ÷ server_flush_interval. That is the segment cap, and
+   it matched neither source — over-predicting quiet cameras by ~25× and
+   under-predicting busy ones by ~5×.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+// idleKbps / activeKbps are PER VIDEO SOURCE. vsrc = number of sources.
+// src: "log"   = tier ladder read directly from this model's VIDEO_AGENT_LOG
+//      "bytes" = no log pull, but real byte data exists for this model
+//      "est"   = neither; inherits the standard ladder. Treat as unverified.
 const CAMERAS = [
-  { model:"DR40", res:"3840×2160", mp:"8.3 MP (4K)", baseKbps:400, snapKbps:9.1, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, LPR" },
-  { model:"R120", res:"1920×1080", mp:"2 MP", baseKbps:315.3, snapKbps:0.9, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, Visual Tamper" },
-  { model:"R150", res:"1920×1080", mp:"2 MP", baseKbps:400, snapKbps:0.9, lenses:1, sold:true, legacy:false, defaultAI:"Object Search" },
-  { model:"R200", res:"2592×1944", mp:"5 MP", baseKbps:400, snapKbps:2.3, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, Face Recog, Occupancy" },
-  { model:"R230", res:"2592×1456", mp:"3.8 MP", baseKbps:400, snapKbps:6.8, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, Human Loitering" },
-  { model:"R36S", res:"3520×3520", mp:"12.4 MP (360°)", baseKbps:400, snapKbps:6.8, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, Visual Tamper" },
-  { model:"R410", res:"3840×2160", mp:"8.3 MP (4K)", baseKbps:400, snapKbps:9.1, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, Face, People, PPE, Cross" },
-  { model:"R520", res:"2592×1944", mp:"5 MP", baseKbps:400, snapKbps:5.1, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, Cross, Timelapse" },
-  { model:"R540", res:"3840×2160", mp:"8.3 MP (4K)", baseKbps:400, snapKbps:9.1, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, Occupancy, Cross" },
-  { model:"R545", res:"3840×2160", mp:"8.3 MP (4K)", baseKbps:386.7, snapKbps:9.1, lenses:1, sold:true, legacy:false, defaultAI:"Object Search, Face, Color, LPR" },
-  { model:"R600", res:"2592×1944", mp:"5 MP ×4", baseKbps:1597.3, snapKbps:20.4, lenses:4, sold:true, legacy:false, defaultAI:"Object Search, Face, People, Cross, TL" },
-  { model:"R1",   res:"1280×720", mp:"0.9 MP", baseKbps:96, snapKbps:0.5, lenses:1, sold:false, legacy:true, defaultAI:"Object Search (legacy)" },
-  { model:"R2",   res:"1920×1080", mp:"2 MP", baseKbps:96, snapKbps:0.9, lenses:1, sold:false, legacy:true, defaultAI:"Object Search (legacy)" },
-  { model:"R3",   res:"3008×3008", mp:"9 MP (360°)", baseKbps:400, snapKbps:6.8, lenses:1, sold:false, legacy:true, defaultAI:"Visual Tamper" },
-  { model:"R4",   res:"3840×2160", mp:"8.3 MP (4K)", baseKbps:374, snapKbps:9.1, lenses:1, sold:false, legacy:true, defaultAI:"Object Search, Hi-Res Detection" },
-  { model:"R170", res:"1920×1080", mp:"2 MP", baseKbps:400, snapKbps:0.9, lenses:1, sold:false, legacy:true, defaultAI:"Object Search" },
-  { model:"R500", res:"3840×2160", mp:"8.3 MP (4K)", baseKbps:382.4, snapKbps:9.1, lenses:1, sold:false, legacy:true, defaultAI:"LPR, Visual Tamper" },
-  { model:"R510", res:"3840×2160", mp:"8.3 MP (4K)", baseKbps:249.5, snapKbps:9.1, lenses:1, sold:false, legacy:true, defaultAI:"Object Search, Visual Tamper" },
+  { model:"DR40", res:"3840×2160", mp:"8.3 MP (4K)", idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"bytes", note:"Badge reader / intercom. 7 units in the byte export: 2428 / 1127 / 990 kbps with archiving on, 13 / 11 / 9 without." },
+  { model:"R100", res:"1920×1080", mp:"2 MP",        idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"est",   note:"No online unit in the bench org. Standard ladder assumed." },
+  { model:"R120", res:"1920×1440", mp:"2 MP",        idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"Log window ran 34% at the active tier. Real bytes 1137 kbps archiving on, 86 off." },
+  { model:"R150", res:"1920×1080", mp:"2 MP",        idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"Only archive-off sample was 41 kbps — a static arcade cam." },
+  { model:"R200", res:"1920×1440", mp:"5 MP",        idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"4 archive-on units, median 982 kbps." },
+  { model:"R230", res:"2592×1944", mp:"3.8 MP",      idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"3 archive-off units at 16 kbps median — stairwells and exits." },
+  { model:"R36S", res:"3520×3520", mp:"12.4 MP (360°)", idleKbps:1200, activeKbps:3000, vsrc:1, sold:true, legacy:false, src:"log", note:"1743 kbps on a busy street with archiving; 398 median without." },
+  { model:"R410", res:"3840×2160", mp:"8.3 MP (4K)", idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"Best log-to-bytes agreement in the set: 1640 predicted vs 1865 actual." },
+  { model:"R520", res:"2592×1944", mp:"5 MP",        idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"1155 kbps archiving on, 169 median off." },
+  { model:"R540", res:"3840×2160", mp:"8.3 MP (4K)", idleKbps:1180, activeKbps:2951, vsrc:1, sold:true,  legacy:false, src:"log",   note:"Scaled ladder. Busiest single-sensor camera measured: 2350 kbps." },
+  { model:"R545", res:"3840×2160", mp:"8.3 MP (4K)", idleKbps:1160, activeKbps:2900, vsrc:1, sold:true,  legacy:false, src:"log",   note:"Scaled ladder. LPR unit on a rear lot: 944 kbps." },
+  { model:"R600", res:"2592×1944", mp:"5 MP ×4",     idleKbps:1200, activeKbps:3000, vsrc:4, sold:true,  legacy:false, src:"log",   note:"4 independent sources. Ceiling 12000 kbps; measured p95 of 11323 confirms it." },
+  { model:"R1",   res:"1280×720",  mp:"0.9 MP",      idleKbps:360,  activeKbps:720,  vsrc:1, sold:false, legacy:true,  src:"log",   note:"Legacy firmware logs 'setting single stream' — one encoder feeds local and cloud." },
+  { model:"R2",   res:"2592×1944", mp:"2 MP",        idleKbps:786,  activeKbps:1967, vsrc:1, sold:false, legacy:true,  src:"log",   note:"Legacy single-stream ladder. 756 kbps archiving on, 6 off." },
+  { model:"R3",   res:"3008×3008", mp:"9 MP (360°)", idleKbps:1200, activeKbps:3000, vsrc:1, sold:false, legacy:true,  src:"log",   note:"4 archive-on units, median 888 kbps." },
+  { model:"R4",   res:"3840×2160", mp:"8.3 MP (4K)", idleKbps:1200, activeKbps:3000, vsrc:1, sold:false, legacy:true,  src:"log",   note:"Widest spread in the fleet: 2023 kbps at a front door, 4 kbps in a server room." },
+  { model:"R170", res:"1920×1080", mp:"2 MP",        idleKbps:1200, activeKbps:3000, vsrc:1, sold:false, legacy:true,  src:"log",   note:"Only sample had archiving off: 91 kbps against a 3000 kbps ceiling." },
+  { model:"R500", res:"3840×2160", mp:"8.3 MP (4K)", idleKbps:1146, activeKbps:2867, vsrc:1, sold:false, legacy:true,  src:"log",   note:"Scaled ladder. Parking entrance with 120 d archiving: 1582 kbps." },
+  { model:"R510", res:"3840×2160", mp:"8.3 MP (4K)", idleKbps:748,  activeKbps:1871, vsrc:1, sold:false, legacy:true,  src:"log",   note:"Lowest ladder of the 4K line. 3 archive-on units averaged 1436 kbps — near ceiling." },
 ];
 
+/* Scene activity: fraction of the model's ceiling actually uploaded.
+   Factors are the mean of each empirical quartile band, split by archiving
+   state. n = cameras in that band. */
+const ACTIVITY = [
+  { key:"Low",      archOn:0.193, archOff:0.003, nOn:7,  nOff:3,
+    stats:"< 5 persons/hr · < 2 vehicles/hr",
+    examples:"Stairwells, server rooms, storage, utility closets, emergency exits" },
+  { key:"Moderate", archOn:0.428, archOff:0.021, nOn:14, nOff:7,
+    stats:"5 – 50 persons/hr · 2 – 10 vehicles/hr",
+    examples:"Office hallways, small retail, side parking, break rooms, lobbies" },
+  { key:"High",     archOn:0.838, archOff:0.132, nOn:6,  nOff:3,
+    stats:"50+ persons/hr · 10+ vehicles/hr",
+    examples:"Main entrances, busy retail, parking lots, kitchens, warehouses" },
+];
+
+/* Observed p95-hour to average-hour ratio, by archiving state. Used for peak
+   sizing; the result is capped at the ceiling, which no average can exceed. */
+const PEAK_RATIO = { on: 2.18, off: 2.99 };
+
+/* AI event-metadata overhead, kbps per camera.
+
+   IMPORTANT: unlike the ceiling and activity figures above, these are NOT
+   validated. The byte export reports one total per device, so per-feature cost
+   cannot be separated from scene activity — both live inside the activity
+   factor. These are the original payload-size estimates, retained because they
+   are directionally useful for sizing event-heavy deployments. Isolating any
+   one of them needs an A/B on a single camera.
+
+   Timelapse is the exception: it runs a second continuous stream, so it is
+   modelled as adding the model's own idle tier rather than a flat number. */
 const FEATURES = [
   { name:"Object Search", low:1, mod:3, high:8, indep:false, notes:"Built-in; bounding boxes + confidence per detection" },
   { name:"Face Recognition", low:8, mod:23, high:60, indep:false, notes:"Embedding (~20 KB) + 256×256 crop; scales with traffic" },
@@ -826,33 +907,56 @@ const FEATURES = [
   { name:"Vehicle Counting", low:0.1, mod:0.1, high:0.2, indep:true, notes:"Aggregated count only" },
   { name:"Face Counting", low:0.1, mod:0.1, high:0.2, indep:true, notes:"Count only; no embeddings" },
   { name:"Engagement Counting", low:0.2, mod:0.3, high:0.5, indep:true, notes:"Dwell-time analytics, periodic" },
-  { name:"Timelapse", low:400, mod:400, high:400, indep:true, notes:"Full second stream 24/7; ~doubles base upload" },
   { name:"Visual Tamper", low:0.02, mod:0.05, high:0.1, indep:false, notes:"Alert-only; negligible" },
   { name:"WDR", low:0, mod:0, high:0, indep:true, notes:"On-device only; zero upload" },
   { name:"Hi-Res Detection", low:0, mod:0, high:0, indep:true, notes:"On-device full-res AI; no upload" },
   { name:"AI Search", low:5, mod:15, high:40, indep:false, notes:"Frame embeddings + metadata for search" },
-  { name:"Cloud Archiving", low:100, mod:100, high:100, indep:true, notes:"Higher-quality archive tier" },
 ];
 
-const TOGGLE_COLS = ["timelapse","faceRecog","lpr","ppe","peopleocc","crosscount","cloudarchive","aisearch"];
+// "archive" and "timelapse" are handled structurally, not as additive overhead.
+const TOGGLE_COLS = ["archive","timelapse","faceRecog","lpr","ppe","peopleocc","crosscount","aisearch"];
 const OVERHEAD_MAP = {
-  timelapse:    FEATURES.find(f=>f.name==="Timelapse"),
-  faceRecog:    FEATURES.find(f=>f.name==="Face Recognition"),
-  lpr:          FEATURES.find(f=>f.name==="LPR"),
-  ppe:          FEATURES.find(f=>f.name==="PPE Detection"),
-  peopleocc:    FEATURES.find(f=>f.name==="People Counting"),
-  crosscount:   FEATURES.find(f=>f.name==="Cross Counting"),
-  cloudarchive: FEATURES.find(f=>f.name==="Cloud Archiving"),
-  aisearch:     FEATURES.find(f=>f.name==="AI Search"),
+  faceRecog:  FEATURES.find(f=>f.name==="Face Recognition"),
+  lpr:        FEATURES.find(f=>f.name==="LPR"),
+  ppe:        FEATURES.find(f=>f.name==="PPE Detection"),
+  peopleocc:  FEATURES.find(f=>f.name==="People Counting"),
+  crosscount: FEATURES.find(f=>f.name==="Cross Counting"),
+  aisearch:   FEATURES.find(f=>f.name==="AI Search"),
 };
 const OCC_OVERHEAD = FEATURES.find(f=>f.name==="Occupancy Counting");
 const OBJ_SEARCH   = FEATURES.find(f=>f.name==="Object Search");
 
 let profile = "Moderate";
+// Archiving defaults ON: it ships with the Enterprise license at 30 days, and
+// 27 of the 40 cameras in the reference fleet have it enabled.
 let state = CAMERAS.map(() => ({
   qty: 0,
-  toggles: { timelapse:false, faceRecog:false, lpr:false, ppe:false, peopleocc:false, crosscount:false, cloudarchive:false, aisearch:false }
+  toggles: { archive:true, timelapse:false, faceRecog:false, lpr:false, ppe:false, peopleocc:false, crosscount:false, aisearch:false }
 }));
+
+function activityDef() {
+  return ACTIVITY.find(a => a.key === profile) || ACTIVITY[1];
+}
+
+// Everything the summary needs for one model row, in one place.
+function camMetrics(idx) {
+  const cam = CAMERAS[idx], s = state[idx], act = activityDef();
+  const ceiling  = cam.activeKbps * cam.vsrc;
+  const archive  = s.toggles.archive;
+  const factor   = archive ? act.archOn : act.archOff;
+  const aiKbps   = calcAIOverhead(idx);
+  const tlKbps   = s.toggles.timelapse ? cam.idleKbps : 0;
+  const videoAvg = ceiling * factor;
+  // Peak: scale the average by the observed p95/avg ratio, but a camera can
+  // never exceed its own encoder ceiling.
+  const videoPk  = Math.min(ceiling, videoAvg * (archive ? PEAK_RATIO.on : PEAK_RATIO.off));
+  return {
+    cam, qty: s.qty, ceiling, archive, factor, aiKbps, tlKbps,
+    videoAvg, videoPeak: videoPk,
+    avgKbps: videoAvg + aiKbps + tlKbps,
+    peakKbps: videoPk + aiKbps + tlKbps,
+  };
+}
 
 function getOverhead(feat) {
   if (profile==="Low") return feat.low;
@@ -864,7 +968,7 @@ function calcAIOverhead(idx) {
   let oh = getOverhead(OBJ_SEARCH);
   const s = state[idx];
   for (const key of TOGGLE_COLS) {
-    if (s.toggles[key]) {
+    if (s.toggles[key] && OVERHEAD_MAP[key]) {
       oh += getOverhead(OVERHEAD_MAP[key]);
       if (key === "peopleocc") oh += getOverhead(OCC_OVERHEAD);
     }
@@ -891,17 +995,14 @@ function onQtyChange(idx, val) {
 }
 
 function recalc() {
-  let totalCams=0, totalVideoKbps=0, totalSnapKbps=0, totalAIKbps=0;
+  let totalCams=0, totalVideoKbps=0, totalTLKbps=0, totalAIKbps=0;
+  let totalPeakKbps=0, totalCeilingKbps=0, archivedCams=0;
   const rows = document.querySelectorAll('#cam-body tr[data-idx]');
 
   rows.forEach(row => {
     const idx = parseInt(row.dataset.idx);
-    const cam = CAMERAS[idx];
     const s = state[idx];
-    const aiOh = calcAIOverhead(idx);
-    const totalPerCam = cam.baseKbps + cam.snapKbps + aiOh;
-    const subtotalKbps = totalPerCam * s.qty;
-    const subtotalMbps = subtotalKbps / 1000;
+    const m = camMetrics(idx);
 
     TOGGLE_COLS.forEach(key => {
       const cell = row.querySelector(`[data-toggle="${key}"]`);
@@ -911,55 +1012,73 @@ function recalc() {
       }
     });
 
-    row.querySelector('.ai-oh').innerHTML = aiOh.toFixed(1) + ' <span class="unit">kbps</span>';
-    row.querySelector('.total-cam').innerHTML = totalPerCam.toFixed(1) + ' <span class="unit">kbps</span>';
+    row.querySelector('.ceiling').innerHTML  = m.ceiling.toFixed(0) + ' <span class="unit">kbps</span>';
+    row.querySelector('.activity').innerHTML = (m.factor*100).toFixed(1) + ' <span class="unit">%</span>';
+    row.querySelector('.ai-oh').innerHTML    = (m.aiKbps + m.tlKbps).toFixed(1) + ' <span class="unit">kbps</span>';
+    row.querySelector('.total-cam').innerHTML = m.avgKbps.toFixed(0) + ' <span class="unit">kbps</span>';
+    row.querySelector('.peak-cam').innerHTML  = m.peakKbps.toFixed(0) + ' <span class="unit">kbps</span>';
     const sub = row.querySelector('.subtotal');
+    const subtotalMbps = m.avgKbps * m.qty / 1000;
     sub.innerHTML = subtotalMbps.toFixed(2) + ' <span class="unit">Mbps</span>';
-    sub.classList.toggle('glow', s.qty > 0 && subtotalMbps > 0);
+    sub.classList.toggle('glow', m.qty > 0 && subtotalMbps > 0);
 
-    if (s.qty > 0) {
-      totalCams += s.qty;
-      totalVideoKbps += cam.baseKbps * s.qty;
-      totalSnapKbps += cam.snapKbps * s.qty;
-      totalAIKbps += aiOh * s.qty;
+    if (m.qty > 0) {
+      totalCams        += m.qty;
+      totalVideoKbps   += m.videoAvg * m.qty;
+      totalTLKbps      += m.tlKbps * m.qty;
+      totalAIKbps      += m.aiKbps * m.qty;
+      totalPeakKbps    += m.peakKbps * m.qty;
+      totalCeilingKbps += m.ceiling * m.qty;
+      if (m.archive) archivedCams += m.qty;
     }
   });
 
-  const totalKbps = totalVideoKbps + totalSnapKbps + totalAIKbps;
-  const totalMbps = totalKbps / 1000;
-  const headMbps = totalMbps * 1.5;
-  const ispMbps = Math.ceil(headMbps / 50) * 50;
+  const totalKbps = totalVideoKbps + totalTLKbps + totalAIKbps;
+  const avgMbps  = totalKbps / 1000;
+  const peakMbps = totalPeakKbps / 1000;
+  // Size the link off measured peak, not average, then add 30% for protocol
+  // overhead, retransmits and non-camera traffic on the same uplink.
+  const ispMbps = Math.ceil(peakMbps * 1.3 / 50) * 50;
 
   document.getElementById('sum-cams').textContent = totalCams;
-  document.getElementById('sum-raw').textContent = totalMbps.toFixed(1);
-  document.getElementById('sum-head').textContent = headMbps.toFixed(1);
-  document.getElementById('sum-isp').textContent = ispMbps || 0;
+  document.getElementById('sum-raw').textContent  = avgMbps.toFixed(1);
+  document.getElementById('sum-peak').textContent = peakMbps.toFixed(1);
+  document.getElementById('sum-isp').textContent  = ispMbps || 0;
+
+  const archNote = document.getElementById('arch-note');
+  if (totalCams > 0) {
+    const pct = Math.round(archivedCams / totalCams * 100);
+    archNote.innerHTML = `${archivedCams} of ${totalCams} cameras have Cloud Archiving on (${pct}%). ` +
+      `Ceiling if every camera saturated at once: <strong>${(totalCeilingKbps/1000).toFixed(1)} Mbps</strong>.`;
+  } else {
+    archNote.textContent = '';
+  }
 
   document.getElementById('empty-state').style.display = totalCams > 0 ? 'none' : 'block';
   document.getElementById('summary-strip').style.display = totalCams > 0 ? '' : 'none';
   document.getElementById('breakdown-wrap').style.display = totalCams > 0 ? '' : 'none';
 
   document.getElementById('sticky-cams').textContent = totalCams;
-  document.getElementById('sticky-raw').textContent = totalMbps.toFixed(1);
-  document.getElementById('sticky-isp').textContent = ispMbps || 0;
+  document.getElementById('sticky-raw').textContent  = avgMbps.toFixed(1);
+  document.getElementById('sticky-isp').textContent  = ispMbps || 0;
 
   if (totalKbps > 0) {
     const pV = totalVideoKbps/totalKbps*100;
-    const pS = totalSnapKbps/totalKbps*100;
+    const pT = totalTLKbps/totalKbps*100;
     const pA = totalAIKbps/totalKbps*100;
     document.getElementById('bar-video').style.width = pV+'%';
-    document.getElementById('bar-snap').style.width = pS+'%';
-    document.getElementById('bar-ai').style.width = pA+'%';
+    document.getElementById('bar-snap').style.width  = pT+'%';
+    document.getElementById('bar-ai').style.width    = pA+'%';
     document.getElementById('leg-video').textContent = pV.toFixed(1)+'%';
-    document.getElementById('leg-snap').textContent = pS.toFixed(1)+'%';
-    document.getElementById('leg-ai').textContent = pA.toFixed(1)+'%';
+    document.getElementById('leg-snap').textContent  = pT.toFixed(1)+'%';
+    document.getElementById('leg-ai').textContent    = pA.toFixed(1)+'%';
   } else {
     document.getElementById('bar-video').style.width = '33%';
-    document.getElementById('bar-snap').style.width = '33%';
-    document.getElementById('bar-ai').style.width = '34%';
+    document.getElementById('bar-snap').style.width  = '33%';
+    document.getElementById('bar-ai').style.width    = '34%';
     document.getElementById('leg-video').textContent = '-';
-    document.getElementById('leg-snap').textContent = '-';
-    document.getElementById('leg-ai').textContent = '-';
+    document.getElementById('leg-snap').textContent  = '-';
+    document.getElementById('leg-ai').textContent    = '-';
   }
 }
 
@@ -970,22 +1089,37 @@ function buildTable() {
   CAMERAS.forEach((cam, idx) => {
     if (cam.legacy && !addedLegacy) {
       addedLegacy = true;
-      html += `<tr class="legacy-divider"><td colspan="15">Legacy / Discontinued</td></tr>`;
+      html += `<tr class="legacy-divider"><td colspan="16">Legacy / Discontinued</td></tr>`;
     }
+    const est = cam.src === 'est' ? ' <span class="tip" data-tip="Unverified: no log pull or byte data for this model. Standard 1200/3000 kbps ladder assumed.">?</span>' : '';
     html += `<tr data-idx="${idx}" class="${cam.legacy?'legacy':''}">`;
-    html += `<td>${cam.model}</td>`;
+    html += `<td>${cam.model}${est}</td>`;
     html += `<td><input type="number" class="qty-input" min="0" value="0" onchange="onQtyChange(${idx},this.value)" oninput="onQtyChange(${idx},this.value)"></td>`;
     TOGGLE_COLS.forEach(key => {
       html += `<td class="toggle-cell" data-toggle="${key}" onclick="toggleFeature(${idx},'${key}')"><span class="sw"></span></td>`;
     });
-    html += `<td class="num-cell">${cam.baseKbps.toFixed(1)} <span class="unit">kbps</span></td>`;
-    html += `<td class="num-cell">${cam.snapKbps.toFixed(1)} <span class="unit">kbps</span></td>`;
+    html += `<td class="num-cell ceiling">0 <span class="unit">kbps</span></td>`;
+    html += `<td class="num-cell activity">0.0 <span class="unit">%</span></td>`;
     html += `<td class="num-cell ai-oh">0.0 <span class="unit">kbps</span></td>`;
-    html += `<td class="num-cell highlight total-cam">0.0 <span class="unit">kbps</span></td>`;
+    html += `<td class="num-cell highlight total-cam">0 <span class="unit">kbps</span></td>`;
+    html += `<td class="num-cell peak-cam">0 <span class="unit">kbps</span></td>`;
     html += `<td class="num-cell highlight subtotal">0.00 <span class="unit">Mbps</span></td>`;
     html += `</tr>`;
   });
   tbody.innerHTML = html;
+}
+
+function buildActivityRow() {
+  document.getElementById('traffic-row').innerHTML = ACTIVITY.map(a => `
+    <button class="traffic-btn ${a.key===profile?'active':''}" data-profile="${a.key}" onclick="setProfile('${a.key}')">
+      <span class="tb-label">${a.key}</span>
+      <span class="tb-stats">${a.stats}</span>
+      <span class="tb-examples">${a.examples}</span>
+      <span class="tb-examples" style="margin-top:6px;opacity:.75">
+        ${(a.archOn*100).toFixed(1)}% of ceiling with archiving (n=${a.nOn}) &middot;
+        ${(a.archOff*100).toFixed(1)}% without (n=${a.nOff})
+      </span>
+    </button>`).join('');
 }
 
 function buildFeatureRef() {
@@ -1007,13 +1141,17 @@ function buildSpecsRef() {
       addedDiv = true;
       html += `<tr class="legacy-divider"><td colspan="9">Legacy / Discontinued</td></tr>`;
     }
+    const srcLabel = { log:'Log + bytes', bytes:'Bytes only', est:'Estimated' }[c.src];
+    const srcColor = { log:'var(--accent)', bytes:'var(--amber)', est:'var(--dim)' }[c.src];
     html += `<tr class="${c.legacy?'legacy':''}">
       <td style="text-align:left;font-weight:600">${c.model}</td>
       <td>${c.res}</td><td>${c.mp}</td>
-      <td class="num-cell">${c.baseKbps}</td><td class="num-cell">${c.lenses===4?'240':'-'}</td>
-      <td class="num-cell">${c.snapKbps}</td><td class="num-cell">${c.lenses}</td>
-      <td style="color:${c.sold?'var(--accent)':'var(--dim)'}">${c.sold?'Current':'Legacy'}</td>
-      <td style="text-align:left;font-size:.72rem;font-weight:300">${c.defaultAI}</td>
+      <td class="num-cell">${c.idleKbps}</td>
+      <td class="num-cell">${c.activeKbps}</td>
+      <td class="num-cell">${c.vsrc}</td>
+      <td class="num-cell highlight">${c.activeKbps * c.vsrc}</td>
+      <td style="color:${srcColor}">${srcLabel}</td>
+      <td style="text-align:left;font-size:.72rem;font-weight:300;color:var(--muted)">${c.note}</td>
     </tr>`;
   });
   document.getElementById('ref-specs-body').innerHTML = html;
@@ -1029,6 +1167,7 @@ function toggleSection(id) {
   }
 }
 
+buildActivityRow();
 buildTable();
 buildFeatureRef();
 buildSpecsRef();
@@ -1070,28 +1209,31 @@ document.addEventListener('click', e => {
 // === CSV EXPORT ===
 function exportCSV() {
   document.getElementById('export-menu').classList.remove('open');
-  const rows = [['Model','Qty','Timelapse','Face Recog','LPR','PPE','People/Occ','Cross Count','Cloud Archive','AI Search','Base Video (kbps)','Snapshot (kbps)','AI Overhead (kbps)','Total/Cam (kbps)','Subtotal (Mbps)']];
+  const rows = [['Model','Qty','Cloud Archive','Timelapse','Face Recog','LPR','PPE','People/Occ','Cross Count','AI Search','Ceiling (kbps)','Activity (%)','Event Overhead (kbps)','Avg/Cam (kbps)','Peak/Cam (kbps)','Subtotal (Mbps)']];
   CAMERAS.forEach((cam, idx) => {
     const s = state[idx];
     if (s.qty === 0) return;
-    const aiOh = calcAIOverhead(idx);
-    const perCam = cam.baseKbps + cam.snapKbps + aiOh;
+    const m = camMetrics(idx);
     rows.push([
       cam.model, s.qty,
-      s.toggles.timelapse?'ON':'OFF', s.toggles.faceRecog?'ON':'OFF',
-      s.toggles.lpr?'ON':'OFF', s.toggles.ppe?'ON':'OFF',
-      s.toggles.peopleocc?'ON':'OFF', s.toggles.crosscount?'ON':'OFF',
-      s.toggles.cloudarchive?'ON':'OFF', s.toggles.aisearch?'ON':'OFF',
-      cam.baseKbps.toFixed(1), cam.snapKbps.toFixed(1),
-      aiOh.toFixed(1), perCam.toFixed(1), (perCam*s.qty/1000).toFixed(2)
+      s.toggles.archive?'ON':'OFF', s.toggles.timelapse?'ON':'OFF',
+      s.toggles.faceRecog?'ON':'OFF', s.toggles.lpr?'ON':'OFF',
+      s.toggles.ppe?'ON':'OFF', s.toggles.peopleocc?'ON':'OFF',
+      s.toggles.crosscount?'ON':'OFF', s.toggles.aisearch?'ON':'OFF',
+      m.ceiling.toFixed(0), (m.factor*100).toFixed(1),
+      (m.aiKbps + m.tlKbps).toFixed(1),
+      m.avgKbps.toFixed(0), m.peakKbps.toFixed(0),
+      (m.avgKbps*s.qty/1000).toFixed(2)
     ]);
   });
   rows.push([]);
-  rows.push(['Traffic Profile', profile]);
+  rows.push(['Scene Activity', profile]);
   rows.push(['Total Cameras', document.getElementById('sum-cams').textContent]);
-  rows.push(['Raw Upload (Mbps)', document.getElementById('sum-raw').textContent]);
-  rows.push(['With 1.5x Headroom (Mbps)', document.getElementById('sum-head').textContent]);
+  rows.push(['Sustained Average (Mbps)', document.getElementById('sum-raw').textContent]);
+  rows.push(['Busy-Hour Peak (Mbps)', document.getElementById('sum-peak').textContent]);
   rows.push(['Recommended ISP (Mbps)', document.getElementById('sum-isp').textContent]);
+  rows.push([]);
+  rows.push(['Model basis','Measured from Rhombus production traffic 2026-07-29: VIDEO_AGENT_LOG encoder ladders (17 models) + 7-day hourly byte export (48 devices)']);
 
   const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
   const blob = new Blob([csv], {type:'text/csv'});
@@ -1107,7 +1249,7 @@ function exportPDF() {
   document.getElementById('export-menu').classList.remove('open');
   const totalCams = document.getElementById('sum-cams').textContent;
   const rawMbps = document.getElementById('sum-raw').textContent;
-  const headMbps = document.getElementById('sum-head').textContent;
+  const peakMbps = document.getElementById('sum-peak').textContent;
   const ispMbps = document.getElementById('sum-isp').textContent;
   const date = new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'});
 
@@ -1115,24 +1257,24 @@ function exportPDF() {
   CAMERAS.forEach((cam, idx) => {
     const s = state[idx];
     if (s.qty === 0) return;
-    const aiOh = calcAIOverhead(idx);
-    const perCam = cam.baseKbps + cam.snapKbps + aiOh;
+    const m = camMetrics(idx);
     const features = [];
+    if (s.toggles.archive) features.push('Cloud Archive');
     if (s.toggles.timelapse) features.push('Timelapse');
     if (s.toggles.faceRecog) features.push('Face Recog');
     if (s.toggles.lpr) features.push('LPR');
     if (s.toggles.ppe) features.push('PPE');
     if (s.toggles.peopleocc) features.push('People/Occ');
     if (s.toggles.crosscount) features.push('Cross Count');
-    if (s.toggles.cloudarchive) features.push('Cloud Archive');
     if (s.toggles.aisearch) features.push('AI Search');
     camRows += `<tr>
       <td style="font-weight:700">${cam.model}</td>
       <td style="text-align:center">${s.qty}</td>
-      <td style="font-size:11px;color:#555">${features.length ? features.join(', ') : 'Base only'}</td>
-      <td style="text-align:right;font-family:monospace">${cam.baseKbps.toFixed(1)}</td>
-      <td style="text-align:right;font-family:monospace">${aiOh.toFixed(1)}</td>
-      <td style="text-align:right;font-family:monospace;font-weight:700">${(perCam*s.qty/1000).toFixed(2)}</td>
+      <td style="font-size:11px;color:#555">${features.length ? features.join(', ') : 'Event-only, no features'}</td>
+      <td style="text-align:right;font-family:monospace">${m.ceiling.toFixed(0)}</td>
+      <td style="text-align:right;font-family:monospace">${(m.factor*100).toFixed(1)}%</td>
+      <td style="text-align:right;font-family:monospace">${m.peakKbps.toFixed(0)}</td>
+      <td style="text-align:right;font-family:monospace;font-weight:700">${(m.avgKbps*s.qty/1000).toFixed(2)}</td>
     </tr>`;
   });
 
@@ -1165,17 +1307,25 @@ function exportPDF() {
   <div class="logo">R</div>
   <div><h1>Bandwidth Estimate</h1><div class="sub">Rhombus Camera Upload Bandwidth Calculator</div></div>
 </div>
-<div class="meta">${date} &nbsp;&middot;&nbsp; Traffic Profile: <span class="profile-badge">${profile}</span></div>
+<div class="meta">${date} &nbsp;&middot;&nbsp; Scene Activity: <span class="profile-badge">${profile}</span></div>
 <div class="summary-grid">
   <div class="sum-box"><div class="lbl">Total Cameras</div><div class="val">${totalCams}</div><div class="unit">devices</div></div>
-  <div class="sum-box"><div class="lbl">Raw Upload</div><div class="val">${rawMbps}</div><div class="unit">Mbps</div></div>
-  <div class="sum-box"><div class="lbl">w/ 1.5× Headroom</div><div class="val">${headMbps}</div><div class="unit">Mbps</div></div>
+  <div class="sum-box"><div class="lbl">Sustained Avg</div><div class="val">${rawMbps}</div><div class="unit">Mbps</div></div>
+  <div class="sum-box"><div class="lbl">Busy-Hour Peak</div><div class="val">${peakMbps}</div><div class="unit">Mbps</div></div>
   <div class="sum-box primary"><div class="lbl">Recommended ISP</div><div class="val">${ispMbps}</div><div class="unit">Mbps</div></div>
 </div>
 <table>
-  <thead><tr><th>Model</th><th>Qty</th><th>AI Features</th><th>Base (kbps)</th><th>AI (kbps)</th><th>Subtotal (Mbps)</th></tr></thead>
+  <thead><tr><th>Model</th><th>Qty</th><th>Features</th><th>Ceiling (kbps)</th><th>Activity</th><th>Peak/Cam (kbps)</th><th>Subtotal (Mbps)</th></tr></thead>
   <tbody>${camRows}</tbody>
 </table>
+<div style="font-size:10px;color:#666;line-height:1.5;border-top:1px solid #eee;padding-top:10px">
+  <strong>Method.</strong> Each model has a measured encoder ceiling (active tier × video sources).
+  Sustained upload is that ceiling times a scene-activity factor derived from 40 production
+  cameras; busy-hour peak applies the measured p95/average ratio, capped at the ceiling.
+  Recommended ISP is peak × 1.3, rounded up to the nearest 50 Mbps.
+  Cloud Archiving on/off is the dominant variable — an 18× median swing in the reference fleet.
+  Recommended speed excludes non-Rhombus traffic on the same uplink.
+</div>
 <div class="footer">Generated by Rhombus Bandwidth Calculator &middot; rhombussystems.github.io/rhombus-bandwidth-calculator</div>
 </body></html>`;
 
