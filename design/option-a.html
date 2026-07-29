@@ -260,7 +260,7 @@
 
 </div>
 
-<script src="model.js"></script>
+<script src="../model.js"></script>
 <script>
 const CHIP_ORDER = ["archive","timelapse","faceRecog","lpr","ppe","peopleocc","crosscount","aisearch"];
 const CHIP_SHORT = { archive:"Archive", timelapse:"Timelapse", faceRecog:"Face", lpr:"LPR",
@@ -299,7 +299,7 @@ function buildCams() {
         <div class="chips">
           ${CHIP_ORDER.map(k => `
             <button class="chip ${k==='archive'?'arch':''}" data-k="${k}"
-                    onclick="toggle(${i},'${k}')">${CHIP_SHORT[k]}</button>`).join('')}
+                    onclick="${k==='archive'?`setCamArchive(${i}, !archiveFor(${i}))`:`toggle(${i},'${k}')`}">${CHIP_SHORT[k]}</button>`).join('')}
         </div>
       </div>`;
   });
@@ -360,7 +360,8 @@ function render() {
     const row = document.querySelector(`.cam[data-i="${i}"]`);
     row.classList.toggle('live', m.qty > 0);
     row.querySelectorAll('.chip').forEach(c =>
-      c.classList.toggle('on', state.cams[i].toggles[c.dataset.k]));
+      c.classList.toggle('on', c.dataset.k === 'archive'
+        ? archiveFor(i) : state.cams[i].toggles[c.dataset.k]));
     const out = document.getElementById('out'+i);
     out.classList.toggle('zero', m.qty === 0);
     out.innerHTML = m.qty === 0

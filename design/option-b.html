@@ -283,7 +283,7 @@
 
 </main>
 
-<script src="model.js"></script>
+<script src="../model.js"></script>
 <script>
 const SHORT = { timelapse:"Timelapse", faceRecog:"Face", lpr:"LPR", ppe:"PPE",
                 peopleocc:"Ppl/Occ", crosscount:"Cross", aisearch:"Search" };
@@ -310,7 +310,7 @@ function buildRows() {
           <div class="m-sub">${cam.mp}${cam.vsrc>1?` · ${cam.vsrc} src`:''}</div>
         </td>
         <td><input class="qty" type="number" min="0" value="0" id="q${i}" oninput="setQty(${i},this.value)"></td>
-        <td><button class="sw" id="sw${i}" onclick="toggle(${i},'archive')" aria-label="cloud archiving"></button></td>
+        <td><button class="sw" id="sw${i}" onclick="setCamArchive(${i}, !archiveFor(${i}))" aria-label="cloud archiving"></button></td>
         <td><button class="feat-btn" id="fb${i}" onclick="flip(${i})"></button></td>
         <td class="r hide-sm"><span class="val dim">${(cam.activeKbps*cam.vsrc).toLocaleString()}</span></td>
         <td class="r hide-sm"><span class="val dim" id="ac${i}"></span></td>
@@ -394,7 +394,7 @@ function renderRes() {
 function render() {
   document.querySelectorAll('#seg button').forEach(b =>
     b.classList.toggle('on', b.textContent === state.profile));
-  const a = activityDef();
+  const a = siteActivity();
   document.getElementById('seg-meta').innerHTML =
     `${a.examples}.<br>Uploads <span class="mono">${(a.archOn*100).toFixed(1)}%</span> of ceiling
      when archiving (n=${a.nOn}) · <span class="mono">${(a.archOff*100).toFixed(1)}%</span>
@@ -403,7 +403,7 @@ function render() {
   CAMERAS.forEach((cam, i) => {
     const m = camMetrics(i), tg = state.cams[i].toggles;
     document.querySelector(`tr[data-i="${i}"]`).classList.toggle('live', m.qty > 0);
-    document.getElementById('sw'+i).className = 'sw' + (tg.archive ? ' on' : '');
+    document.getElementById('sw'+i).className = 'sw' + (archiveFor(i) ? ' on' : '');
     const n = AI_KEYS.filter(k => tg[k]).length;
     const fb = document.getElementById('fb'+i);
     fb.textContent = n ? `${n} on` : 'none';

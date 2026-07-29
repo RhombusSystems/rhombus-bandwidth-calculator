@@ -132,33 +132,59 @@ const FEATURE_LABELS = {
   crosscount:"Cross Counting", aisearch:"AI Search",
 };
 
+/* Site-wide settings are the defaults every model inherits. A model may
+   override activity and/or archiving individually — `profile: null` and
+   `archive: null` mean "inherit the site setting". This keeps the common case
+   to one decision while still letting a mixed site be described accurately,
+   which matters because archiving is an 18x lever and real sites are mixed. */
 const state = {
   profile: "Moderate",
-  // Archiving defaults on: ships with Enterprise at 30 days, and 27 of the 40
-  // cameras in the reference fleet have it enabled.
+  // Archiving defaults on: it ships with Enterprise at 30 days, and 27 of the
+  // 40 cameras in the reference fleet have it enabled.
+  archive: true,
   cams: CAMERAS.map(() => ({
     qty: 0,
-    toggles: { archive:true, timelapse:false, faceRecog:false, lpr:false,
+    profile: null,   // null = inherit site activity
+    archive: null,   // null = inherit site archiving
+    toggles: { timelapse:false, faceRecog:false, lpr:false,
                ppe:false, peopleocc:false, crosscount:false, aisearch:false },
   })),
 };
 
-function activityDef() {
+function siteActivity() {
   return ACTIVITY.find(a => a.key === state.profile) || ACTIVITY[1];
 }
 
-function getOverhead(feat) {
-  const p = state.profile;
+/** Effective activity band for one model, honouring any override. */
+function activityFor(idx) {
+  const key = state.cams[idx].profile || state.profile;
+  return ACTIVITY.find(a => a.key === key) || ACTIVITY[1];
+}
+
+/** Effective archiving state for one model, honouring any override. */
+function archiveFor(idx) {
+  const o = state.cams[idx].archive;
+  return o === null ? state.archive : o;
+}
+
+/** True when this model differs from the site-wide defaults. */
+function isOverridden(idx) {
+  const c = state.cams[idx];
+  return c.profile !== null || c.archive !== null;
+}
+
+function getOverhead(feat, idx) {
+  const p = activityFor(idx).key;
   return p === "Low" ? feat.low : p === "High" ? feat.high : feat.mod;
 }
 
 function calcAIOverhead(idx) {
-  let oh = getOverhead(OBJ_SEARCH);
+  let oh = getOverhead(OBJ_SEARCH, idx);
   const t = state.cams[idx].toggles;
   for (const key of TOGGLE_COLS) {
     if (t[key] && OVERHEAD_MAP[key]) {
-      oh += getOverhead(OVERHEAD_MAP[key]);
-      if (key === "peopleocc") oh += getOverhead(OCC_OVERHEAD);
+      oh += getOverhead(OVERHEAD_MAP[key], idx);
+      if (key === "peopleocc") oh += getOverhead(OCC_OVERHEAD, idx);
     }
   }
   return oh;
@@ -166,9 +192,9 @@ function calcAIOverhead(idx) {
 
 /** Everything a view needs about one model row. */
 function camMetrics(idx) {
-  const cam = CAMERAS[idx], s = state.cams[idx], act = activityDef();
+  const cam = CAMERAS[idx], s = state.cams[idx], act = activityFor(idx);
   const ceiling = cam.activeKbps * cam.vsrc;
-  const archive = s.toggles.archive;
+  const archive = archiveFor(idx);
   const factor  = archive ? act.archOn : act.archOff;
   const aiKbps  = calcAIOverhead(idx);
   const tlKbps  = s.toggles.timelapse ? cam.idleKbps : 0;
@@ -178,7 +204,7 @@ function camMetrics(idx) {
   const videoPeak = Math.min(ceiling, videoAvg * (archive ? PEAK_RATIO.on : PEAK_RATIO.off));
   return {
     idx, cam, qty: s.qty, ceiling, archive, factor, aiKbps, tlKbps,
-    videoAvg, videoPeak,
+    videoAvg, videoPeak, activityKey: act.key, overridden: isOverridden(idx),
     avgKbps: videoAvg + aiKbps + tlKbps,
     peakKbps: videoPeak + aiKbps + tlKbps,
     activeFeatures: TOGGLE_COLS.filter(k => s.toggles[k]),
@@ -220,3 +246,14 @@ function totals() {
 function setProfile(p) { state.profile = p; render(); }
 function setQty(i, v)  { state.cams[i].qty = Math.max(0, parseInt(v) || 0); render(); }
 function toggle(i, k)  { state.cams[i].toggles[k] = !state.cams[i].toggles[k]; render(); }
+
+/* ── overrides ─────────────────────────────────────────────────────────────── */
+function setSiteArchive(on)   { state.archive = on; render(); }
+function setCamProfile(i, p)  { state.cams[i].profile = p; render(); }   // null = inherit
+function setCamArchive(i, a)  { state.cams[i].archive = a; render(); }   // null = inherit
+function clearOverride(i) {
+  const c = state.cams[i];
+  c.profile = null; c.archive = null;
+  Object.keys(c.toggles).forEach(k => c.toggles[k] = false);
+  render();
+}
