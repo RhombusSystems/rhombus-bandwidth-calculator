@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Option A — Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,700&family=Karla:wght@300;400;500;700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:#f7f4ee; --paper-2:#f1ede4; --ink:#14130f; --ink-2:#4a4740;
+    --ink-3:#8a857a; --rule:rgba(20,19,15,.13); --rule-2:rgba(20,19,15,.07);
+    --navy:#1b2b4a; --rust:#b4441c; --moss:#4a5d3a;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    background:var(--paper); color:var(--ink);
+    font-family:'Karla',sans-serif; font-size:15px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      repeating-linear-gradient(0deg, var(--rule-2) 0 1px, transparent 1px 44px),
+      repeating-linear-gradient(90deg, var(--rule-2) 0 1px, transparent 1px 44px);
+  }
+  /* paper grain */
+  body::before {
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:99; opacity:.32;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E");
+    mix-blend-mode:multiply;
+  }
+  .mono { font-family:'Azeret Mono',monospace; font-variant-numeric:tabular-nums; }
+  .disp { font-family:'Fraunces',serif; font-variation-settings:'opsz' 80; }
+  .lbl {
+    font-size:.62rem; text-transform:uppercase; letter-spacing:.18em;
+    font-weight:700; color:var(--ink-3);
+  }
+
+  /* ── shell ── */
+  .wrap { max-width:1240px; margin:0 auto; padding:0 32px; }
+  header {
+    border-bottom:1.5px solid var(--ink); padding:34px 0 18px; margin-bottom:0;
+    display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap;
+  }
+  header h1 {
+    font-family:'Fraunces',serif; font-variation-settings:'opsz' 120;
+    font-weight:700; font-size:clamp(2rem,4.4vw,3.1rem); line-height:.95;
+    letter-spacing:-.02em;
+  }
+  header h1 em { font-style:italic; font-weight:300; color:var(--rust); }
+  .hdr-meta { text-align:right; font-size:.72rem; color:var(--ink-3); line-height:1.7; }
+  .hdr-meta strong { color:var(--ink); font-weight:500; }
+
+  /* ── two-column: sticky readout + config ── */
+  .cols { display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:0; align-items:start; }
+  .main-col { border-right:1.5px solid var(--ink); padding:0 44px 90px 0; }
+  .side-col { padding:0 0 90px 30px; position:sticky; top:0; }
+
+  section { padding:38px 0; border-bottom:1px solid var(--rule); }
+  section:last-child { border-bottom:none; }
+  .sec-hd { display:flex; align-items:baseline; gap:14px; margin-bottom:22px; }
+  .sec-num {
+    font-family:'Azeret Mono',monospace; font-size:.68rem; color:var(--rust);
+    font-weight:500; padding-top:3px;
+  }
+  .sec-hd h2 {
+    font-family:'Fraunces',serif; font-variation-settings:'opsz' 40;
+    font-size:1.32rem; font-weight:500; letter-spacing:-.01em;
+  }
+  .sec-hd .hint { margin-left:auto; font-size:.72rem; color:var(--ink-3); font-style:italic; }
+
+  /* ── activity picker ── */
+  .acts { display:grid; grid-template-columns:repeat(3,1fr); gap:0; border:1px solid var(--ink); }
+  .act {
+    padding:16px 15px; background:transparent; border:none; cursor:pointer; text-align:left;
+    border-right:1px solid var(--rule); font-family:inherit; transition:background .22s;
+    display:flex; flex-direction:column; gap:5px;
+  }
+  .act:last-child { border-right:none; }
+  .act:hover { background:var(--paper-2); }
+  .act.on { background:var(--ink); color:var(--paper); }
+  .act.on .a-nm { color:var(--paper); }
+  .act.on .a-sub, .act.on .a-fac { color:rgba(247,244,238,.62); }
+  .act .a-nm {
+    font-family:'Fraunces',serif; font-variation-settings:'opsz' 30;
+    font-size:1.02rem; font-weight:500;
+  }
+  .act .a-sub { font-size:.68rem; color:var(--ink-3); line-height:1.4; }
+  .act .a-fac {
+    font-family:'Azeret Mono',monospace; font-size:.63rem; color:var(--ink-3);
+    margin-top:2px; padding-top:6px; border-top:1px solid currentColor; opacity:.85;
+  }
+
+  /* ── camera rows ── */
+  .cam { border-bottom:1px solid var(--rule); padding:13px 0; transition:background .2s; }
+  .cam:first-of-type { border-top:1px solid var(--ink); }
+  .cam.live { background:linear-gradient(90deg, rgba(180,68,28,.045), transparent 62%); }
+  .cam-top { display:flex; align-items:center; gap:16px; }
+  .cam-id { min-width:100px; display:flex; align-items:baseline; gap:7px; }
+  .cam-id .m {
+    font-family:'Fraunces',serif; font-variation-settings:'opsz' 30;
+    font-size:1.06rem; font-weight:500;
+  }
+  .cam.legacy .cam-id .m { color:var(--ink-3); font-weight:300; }
+  .cam-id .est { font-size:.58rem; color:var(--rust); }
+  .cam-spec {
+    font-family:'Azeret Mono',monospace; font-size:.66rem; color:var(--ink-3);
+    min-width:150px;
+  }
+  .stepper { display:flex; align-items:center; border:1px solid var(--ink); height:30px; }
+  .stepper button {
+    width:28px; height:28px; border:none; background:transparent; cursor:pointer;
+    font-size:1rem; color:var(--ink); line-height:1; font-family:inherit; transition:background .15s;
+  }
+  .stepper button:hover { background:var(--ink); color:var(--paper); }
+  .stepper input {
+    width:44px; height:28px; border:none; background:transparent; text-align:center;
+    font-family:'Azeret Mono',monospace; font-size:.85rem; font-weight:500; color:var(--ink);
+    border-left:1px solid var(--rule); border-right:1px solid var(--rule);
+    -moz-appearance:textfield;
+  }
+  .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { display:none; }
+  .cam-out { margin-left:auto; text-align:right; min-width:112px; }
+  .cam-out .v {
+    font-family:'Fraunces',serif; font-variation-settings:'opsz' 60;
+    font-size:1.3rem; font-weight:500; line-height:1;
+  }
+  .cam-out .u { font-family:'Azeret Mono',monospace; font-size:.6rem; color:var(--ink-3); }
+  .cam-out.zero .v { color:var(--rule); }
+
+  /* feature chips */
+  .chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:10px; padding-left:116px; }
+  .chip {
+    font-size:.6rem; text-transform:uppercase; letter-spacing:.09em; font-weight:700;
+    padding:4px 9px; border:1px solid var(--rule); background:transparent; cursor:pointer;
+    color:var(--ink-3); font-family:inherit; transition:all .18s; border-radius:2px;
+  }
+  .chip:hover { border-color:var(--ink); color:var(--ink); }
+  .chip.on { background:var(--navy); border-color:var(--navy); color:var(--paper); }
+  .chip.arch.on { background:var(--rust); border-color:var(--rust); }
+  .chip.est { cursor:default; border-style:dashed; }
+
+  /* ── readout ── */
+  .readout { padding-top:38px; }
+  .ro-hero { border-top:1.5px solid var(--ink); padding-top:16px; margin-bottom:2px; }
+  .ro-hero .v {
+    font-family:'Fraunces',serif; font-variation-settings:'opsz' 144;
+    font-size:4.4rem; font-weight:700; line-height:.86; letter-spacing:-.035em;
+    color:var(--rust);
+  }
+  .ro-hero .u { font-family:'Azeret Mono',monospace; font-size:.7rem; color:var(--ink-2); }
+  .ro-row {
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:9px 0; border-bottom:1px solid var(--rule-2);
+  }
+  .ro-row .k { font-size:.72rem; color:var(--ink-2); }
+  .ro-row .v {
+    font-family:'Azeret Mono',monospace; font-size:.86rem; font-weight:500;
+  }
+  .ro-row.emph .v { font-size:1.05rem; }
+  .bar { display:flex; height:5px; margin:20px 0 8px; border:1px solid var(--ink); }
+  .bar span { transition:width .45s cubic-bezier(.4,0,.2,1); }
+  .bar .s1 { background:var(--navy); } .bar .s2 { background:var(--rust); } .bar .s3 { background:var(--moss); }
+  .bar-key { display:flex; flex-direction:column; gap:3px; font-size:.65rem; color:var(--ink-3); }
+  .bar-key div { display:flex; justify-content:space-between; }
+  .bar-key i { width:7px; height:7px; display:inline-block; margin-right:6px; }
+  .ro-note {
+    margin-top:22px; padding:13px 14px; background:var(--paper-2);
+    border-left:2px solid var(--rust); font-size:.7rem; line-height:1.6; color:var(--ink-2);
+  }
+  .ro-empty { font-size:.78rem; color:var(--ink-3); font-style:italic; line-height:1.7; }
+
+  /* ── footnote ── */
+  .foot {
+    border-top:1.5px solid var(--ink); padding:26px 0 60px; font-size:.7rem;
+    color:var(--ink-3); line-height:1.75; max-width:78ch;
+  }
+  .foot h3 {
+    font-family:'Fraunces',serif; font-size:.82rem; font-weight:500;
+    color:var(--ink); margin-bottom:6px; text-transform:none;
+  }
+  .foot p { margin-bottom:12px; }
+  .foot code { font-family:'Azeret Mono',monospace; font-size:.94em; color:var(--navy); }
+
+  /* entrance */
+  @keyframes rise { from { opacity:0; transform:translateY(11px); } to { opacity:1; transform:none; } }
+  .anim { animation:rise .6s cubic-bezier(.2,.7,.3,1) both; }
+
+  @media (max-width:1000px) {
+    .cols { grid-template-columns:1fr; }
+    .main-col { border-right:none; padding-right:0; padding-bottom:0; }
+    .side-col { position:static; padding:0 0 60px; border-top:1.5px solid var(--ink); }
+    .cam-spec { display:none; }
+    .chips { padding-left:0; }
+  }
+  @media (max-width:600px) {
+    .wrap { padding:0 18px; }
+    .acts { grid-template-columns:1fr; }
+    .act { border-right:none; border-bottom:1px solid var(--rule); }
+    .cam-top { flex-wrap:wrap; }
+    .cam-out { min-width:0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="anim">
+    <h1>Bandwidth<br><em>Calculator</em></h1>
+    <div class="hdr-meta">
+      <strong>Rhombus camera uplink sizing</strong><br>
+      Built on measured production traffic<br>
+      <span class="mono">17 models · 48 devices · 7 days</span>
+    </div>
+  </header>
+
+  <div class="cols">
+    <div class="main-col">
+
+      <section class="anim" style="animation-delay:.06s">
+        <div class="sec-hd">
+          <span class="sec-num">01</span>
+          <h2>Scene activity</h2>
+          <span class="hint">share of encoder ceiling actually sent</span>
+        </div>
+        <div class="acts" id="acts"></div>
+      </section>
+
+      <section class="anim" style="animation-delay:.12s">
+        <div class="sec-hd">
+          <span class="sec-num">02</span>
+          <h2>Cameras</h2>
+          <span class="hint">rust chip = cloud archiving, the 18&times; lever</span>
+        </div>
+        <div id="cams"></div>
+      </section>
+
+    </div>
+
+    <aside class="side-col">
+      <div class="readout anim" id="readout" style="animation-delay:.18s"></div>
+    </aside>
+  </div>
+
+  <div class="foot">
+    <h3>Where these numbers come from</h3>
+    <p>Encoder ladders were read from <code>VIDEO_AGENT_LOG</code> dash-quality transitions on one
+    online unit of each of 17 models, roughly 21 hours per model. Activity factors and peak ratios
+    come from a 7-day hourly bandwidth export covering 41 cameras and 7 DR40 readers. Fifteen
+    devices appear in both datasets; on those, the log-derived ceiling predicted actual bytes
+    within &plusmn;17% wherever the scene was active.</p>
+    <h3>Known limits</h3>
+    <p>All measurements come from one organisation, so per-model sample sizes are small
+    (1&ndash;5 cameras). AI feature overhead is <em>not</em> separately validated &mdash; the export
+    gives one total per device, so per-feature cost cannot be split from scene activity. Activity is
+    the largest source of error: two identical cameras in the same building differed by 500&times;
+    purely on scene content, so rate each camera on its own view rather than applying one profile
+    site-wide. Recommended speed excludes non-Rhombus traffic sharing the uplink.</p>
+  </div>
+
+</div>
+
+<script src="model.js"></script>
+<script>
+const CHIP_ORDER = ["archive","timelapse","faceRecog","lpr","ppe","peopleocc","crosscount","aisearch"];
+const CHIP_SHORT = { archive:"Archive", timelapse:"Timelapse", faceRecog:"Face", lpr:"LPR",
+                     ppe:"PPE", peopleocc:"Ppl/Occ", crosscount:"Cross", aisearch:"Search" };
+
+function buildActs() {
+  document.getElementById('acts').innerHTML = ACTIVITY.map(a => `
+    <button class="act ${a.key===state.profile?'on':''}" onclick="setProfile('${a.key}')">
+      <span class="a-nm">${a.key}</span>
+      <span class="a-sub">${a.stats}</span>
+      <span class="a-fac">${(a.archOn*100).toFixed(1)}% archived · ${(a.archOff*100).toFixed(1)}% not</span>
+    </button>`).join('');
+}
+
+function buildCams() {
+  let html = '', divided = false;
+  CAMERAS.forEach((cam, i) => {
+    if (cam.legacy && !divided) {
+      divided = true;
+      html += `<div style="padding:22px 0 8px" class="lbl">Legacy / discontinued</div>`;
+    }
+    const est = cam.src === 'est' ? '<span class="est" title="No log or byte data — standard ladder assumed">◇</span>' : '';
+    html += `
+      <div class="cam ${cam.legacy?'legacy':''}" data-i="${i}">
+        <div class="cam-top">
+          <div class="cam-id"><span class="m">${cam.model}</span>${est}</div>
+          <div class="cam-spec">${cam.ceilLabel || (cam.activeKbps*cam.vsrc).toLocaleString()} kbps ceiling${cam.vsrc>1?` · ${cam.vsrc} src`:''}</div>
+          <div class="stepper">
+            <button onclick="bump(${i},-1)" aria-label="decrease">–</button>
+            <input type="number" min="0" value="0" id="q${i}"
+                   oninput="setQty(${i},this.value)" aria-label="${cam.model} quantity">
+            <button onclick="bump(${i},1)" aria-label="increase">+</button>
+          </div>
+          <div class="cam-out zero" id="out${i}"><span class="v">—</span></div>
+        </div>
+        <div class="chips">
+          ${CHIP_ORDER.map(k => `
+            <button class="chip ${k==='archive'?'arch':''}" data-k="${k}"
+                    onclick="toggle(${i},'${k}')">${CHIP_SHORT[k]}</button>`).join('')}
+        </div>
+      </div>`;
+  });
+  document.getElementById('cams').innerHTML = html;
+}
+
+function bump(i, d) {
+  state.cams[i].qty = Math.max(0, state.cams[i].qty + d);
+  document.getElementById('q'+i).value = state.cams[i].qty;
+  render();
+}
+
+function renderReadout() {
+  const t = totals();
+  const el = document.getElementById('readout');
+  if (t.cams === 0) {
+    el.innerHTML = `<div class="lbl" style="margin-bottom:10px">Uplink</div>
+      <div class="ro-empty">Add cameras to size the connection.<br><br>
+      Cloud archiving is on by default — it is the single largest driver, an 18&times; median
+      swing in the measured fleet. Turn it off per model with the rust chip.</div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="lbl" style="margin-bottom:10px">Recommended uplink</div>
+    <div class="ro-hero">
+      <div class="v">${t.ispMbps}</div>
+      <div class="u">Mbps upload · peak &times;1.3, rounded to 50</div>
+    </div>
+    <div style="margin-top:22px">
+      <div class="ro-row emph"><span class="k">Busy-hour peak</span><span class="v">${t.peakMbps.toFixed(1)} Mbps</span></div>
+      <div class="ro-row emph"><span class="k">Sustained average</span><span class="v">${t.avgMbps.toFixed(1)} Mbps</span></div>
+      <div class="ro-row"><span class="k">If all saturated at once</span><span class="v">${t.ceilingMbps.toFixed(1)} Mbps</span></div>
+      <div class="ro-row"><span class="k">Monthly volume</span><span class="v">${t.monthlyTB.toFixed(2)} TB</span></div>
+      <div class="ro-row"><span class="k">Cameras · models</span><span class="v">${t.cams} · ${t.models}</span></div>
+    </div>
+    <div class="bar">
+      <span class="s1" style="width:${t.split.video}%"></span>
+      <span class="s2" style="width:${t.split.tl}%"></span>
+      <span class="s3" style="width:${t.split.ai}%"></span>
+    </div>
+    <div class="bar-key">
+      <div><span><i style="background:var(--navy)"></i>Video</span><span class="mono">${t.split.video.toFixed(1)}%</span></div>
+      <div><span><i style="background:var(--rust)"></i>Timelapse</span><span class="mono">${t.split.tl.toFixed(1)}%</span></div>
+      <div><span><i style="background:var(--moss)"></i>Event metadata</span><span class="mono">${t.split.ai.toFixed(1)}%</span></div>
+    </div>
+    <div class="ro-note">
+      <strong>${t.archived} of ${t.cams}</strong> cameras archive to cloud
+      (${Math.round(t.archived/t.cams*100)}%). Archived cameras uploaded a median 1047 kbps in
+      production; non-archived, 58 kbps.
+    </div>`;
+}
+
+function render() {
+  document.querySelectorAll('.act').forEach(b =>
+    b.classList.toggle('on', b.textContent.trim().startsWith(state.profile)));
+  CAMERAS.forEach((cam, i) => {
+    const m = camMetrics(i);
+    const row = document.querySelector(`.cam[data-i="${i}"]`);
+    row.classList.toggle('live', m.qty > 0);
+    row.querySelectorAll('.chip').forEach(c =>
+      c.classList.toggle('on', state.cams[i].toggles[c.dataset.k]));
+    const out = document.getElementById('out'+i);
+    out.classList.toggle('zero', m.qty === 0);
+    out.innerHTML = m.qty === 0
+      ? `<span class="v">—</span>`
+      : `<span class="v">${(m.avgKbps*m.qty/1000).toFixed(2)}</span> <span class="u">Mbps</span>`;
+  });
+  renderReadout();
+}
+
+buildActs();
+buildCams();
+render();
+</script>
+</body>
+</html>

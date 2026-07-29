@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bandwidth Calculator — Design Options</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#101318; --card:#181d24; --line:#2a323c; --fg:#e6ebf1; --fg2:#8e9aa8; --acc:#ffb44d; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--fg);font-family:Figtree,sans-serif;line-height:1.6;padding:40px 22px 80px}
+  .w{max-width:760px;margin:0 auto}
+  h1{font-size:1.9rem;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
+  .sub{color:var(--fg2);font-size:.9rem;margin-bottom:34px}
+  a.opt{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--line);
+        border-radius:14px;padding:20px 22px;margin-bottom:14px;transition:.2s}
+  a.opt:hover{border-color:var(--acc);transform:translateY(-2px)}
+  .tag{font-family:'DM Mono',monospace;font-size:.66rem;color:var(--acc);letter-spacing:.12em;text-transform:uppercase}
+  h2{font-size:1.2rem;font-weight:600;margin:5px 0 6px}
+  p{color:var(--fg2);font-size:.86rem}
+  .meta{font-family:'DM Mono',monospace;font-size:.7rem;color:#5a6674;margin-top:10px}
+  .note{margin-top:26px;padding:15px 17px;background:var(--card);border-left:3px solid var(--acc);
+        border-radius:8px;font-size:.8rem;color:var(--fg2)}
+  .note a{color:var(--acc)}
+</style>
+</head>
+<body>
+<div class="w">
+  <h1>Design options</h1>
+  <p class="sub">Three takes on a cleaner bandwidth calculator. Same validated model in all three &mdash;
+     only the interface differs. Open each on your phone as well as desktop.</p>
+
+  <a class="opt" href="option-a.html">
+    <span class="tag">Option A</span>
+    <h2>Blueprint</h2>
+    <p>Editorial technical. Warm paper, hairline rules, serif numerals. The uplink figure lives in a
+       sticky side rail so it never leaves the screen while you configure. Per-model feature chips.</p>
+    <div class="meta">light · Fraunces + Karla · every control visible at once</div>
+  </a>
+
+  <a class="opt" href="option-b.html">
+    <span class="tag">Option B</span>
+    <h2>Console</h2>
+    <p>Dark instrument panel. Live telemetry pinned to the top bar. Nine columns instead of sixteen &mdash;
+       AI features collapse into one cell per row that expands on demand.</p>
+    <div class="meta">dark · Martian Mono + Archivo · densest, fastest to scan</div>
+  </a>
+
+  <a class="opt" href="option-c.html">
+    <span class="tag">Option C</span>
+    <h2>Steps</h2>
+    <p>One decision at a time, three cards. Search-to-filter model picker, site-wide archiving switch,
+       big tap targets. Copy-summary button for dropping numbers into an email from site.</p>
+    <div class="meta">light · Instrument Serif + Figtree · phone-first</div>
+  </a>
+
+  <div class="note">
+    The live calculator is unchanged at
+    <a href="../">rhombussystems.github.io/rhombus-bandwidth-calculator</a>.
+    These are previews only &mdash; pick one and it becomes the real page.
+  </div>
+</div>
+</body>
+</html>

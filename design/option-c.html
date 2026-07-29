@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Option C — Steps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@300;400;500;600;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#eeeae3; --card:#fdfcfa; --card-2:#f6f3ee;
+    --ink:#211f1c; --ink-2:#5f5a52; --ink-3:#9a938a;
+    --line:#e0dbd2; --teal:#1d5c58; --teal-lt:#e4efec; --clay:#b5502f; --sand:#c9a227;
+    --r:18px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:var(--bg); color:var(--ink);
+    font-family:'Figtree',sans-serif; font-size:15.5px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(120% 70% at 50% 0%, #f5f2ec 0%, var(--bg) 62%);
+    min-height:100vh;
+  }
+  .mono { font-family:'DM Mono',monospace; font-variant-numeric:tabular-nums; }
+  .serif { font-family:'Instrument Serif',serif; font-weight:400; }
+  .lbl {
+    font-size:.63rem; text-transform:uppercase; letter-spacing:.15em;
+    font-weight:600; color:var(--ink-3);
+  }
+
+  .shell { max-width:660px; margin:0 auto; padding:26px 20px 90px; }
+
+  /* ── header + progress ── */
+  .top { text-align:center; margin-bottom:26px; }
+  .top h1 {
+    font-family:'Instrument Serif',serif; font-size:clamp(2.1rem,7vw,2.9rem);
+    line-height:1.05; letter-spacing:-.015em; margin-bottom:5px;
+  }
+  .top h1 em { font-style:italic; color:var(--teal); }
+  .top p { font-size:.8rem; color:var(--ink-3); }
+
+  .steps { display:flex; gap:7px; margin-bottom:22px; }
+  .step-pip { flex:1; height:3px; background:var(--line); border-radius:2px; overflow:hidden; }
+  .step-pip i { display:block; height:100%; width:0; background:var(--teal); transition:width .5s cubic-bezier(.4,0,.2,1); }
+  .step-pip.done i, .step-pip.now i { width:100%; }
+  .step-pip.now i { background:var(--clay); }
+
+  /* ── card ── */
+  .card {
+    background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+    padding:26px 24px; box-shadow:0 1px 2px rgba(33,31,28,.04), 0 12px 34px -18px rgba(33,31,28,.16);
+  }
+  .card + .card { margin-top:16px; }
+  .c-hd { margin-bottom:20px; }
+  .c-hd .n {
+    display:inline-block; font-family:'DM Mono',monospace; font-size:.66rem;
+    color:var(--clay); letter-spacing:.1em; margin-bottom:5px;
+  }
+  .c-hd h2 {
+    font-family:'Instrument Serif',serif; font-size:1.7rem; line-height:1.15;
+    letter-spacing:-.01em; margin-bottom:5px;
+  }
+  .c-hd p { font-size:.82rem; color:var(--ink-2); line-height:1.6; }
+
+  /* ── step 1: camera picker ── */
+  .search {
+    width:100%; padding:12px 15px; border:1px solid var(--line); border-radius:11px;
+    background:var(--card-2); font-family:inherit; font-size:.9rem; color:var(--ink);
+    margin-bottom:12px; transition:.2s;
+  }
+  .search:focus { outline:none; border-color:var(--teal); background:var(--card); }
+  .search::placeholder { color:var(--ink-3); }
+  .picks { display:flex; flex-direction:column; gap:7px; max-height:340px; overflow-y:auto; padding-right:3px; }
+  .pick {
+    display:flex; align-items:center; gap:13px; padding:11px 13px;
+    border:1px solid var(--line); border-radius:12px; background:var(--card-2);
+    transition:.2s; cursor:default;
+  }
+  .pick.live { border-color:var(--teal); background:var(--teal-lt); }
+  .pick.legacy { opacity:.62; }
+  .pick .pk-id { flex:1; min-width:0; }
+  .pick .pk-m { font-weight:600; font-size:.95rem; display:flex; align-items:center; gap:6px; }
+  .pick .pk-m .est { font-size:.6rem; color:var(--clay); }
+  .pick .pk-s { font-size:.7rem; color:var(--ink-3); }
+  .qbox { display:flex; align-items:center; gap:0; border:1px solid var(--line); border-radius:9px; overflow:hidden; background:var(--card); }
+  .qbox button {
+    width:34px; height:34px; border:none; background:transparent; cursor:pointer;
+    font-size:1.05rem; color:var(--ink-2); font-family:inherit; transition:.15s;
+  }
+  .qbox button:hover { background:var(--teal); color:#fff; }
+  .qbox input {
+    width:42px; height:34px; border:none; text-align:center; background:transparent;
+    font-family:'DM Mono',monospace; font-size:.86rem; font-weight:500; color:var(--ink);
+    -moz-appearance:textfield;
+  }
+  .qbox input::-webkit-outer-spin-button, .qbox input::-webkit-inner-spin-button { display:none; }
+  .divider-lbl { padding:14px 2px 4px; }
+
+  /* ── step 2: activity + archive ── */
+  .opts { display:flex; flex-direction:column; gap:9px; }
+  .opt {
+    display:flex; align-items:flex-start; gap:13px; padding:14px 15px;
+    border:1px solid var(--line); border-radius:13px; background:var(--card-2);
+    cursor:pointer; transition:.2s; text-align:left; font-family:inherit; width:100%;
+  }
+  .opt:hover { border-color:var(--ink-3); }
+  .opt.on { border-color:var(--teal); background:var(--teal-lt); box-shadow:inset 0 0 0 1px var(--teal); }
+  .radio {
+    width:19px; height:19px; border-radius:50%; border:1.5px solid var(--ink-3);
+    flex-shrink:0; margin-top:2px; position:relative; transition:.2s;
+  }
+  .opt.on .radio { border-color:var(--teal); }
+  .opt.on .radio::after {
+    content:''; position:absolute; inset:3.5px; border-radius:50%; background:var(--teal);
+  }
+  .opt .o-t { font-weight:600; font-size:.95rem; margin-bottom:2px; }
+  .opt .o-d { font-size:.78rem; color:var(--ink-2); line-height:1.5; }
+  .opt .o-f { font-family:'DM Mono',monospace; font-size:.68rem; color:var(--ink-3); margin-top:5px; }
+
+  .archrow {
+    display:flex; align-items:center; gap:14px; padding:16px;
+    border:1px solid var(--line); border-radius:13px; background:var(--card-2); margin-top:14px;
+  }
+  .archrow.on { border-color:var(--clay); background:#fbf0eb; }
+  .archrow .a-t { flex:1; }
+  .archrow .a-t b { font-size:.95rem; }
+  .archrow .a-t span { display:block; font-size:.76rem; color:var(--ink-2); line-height:1.5; margin-top:2px; }
+  .bigsw {
+    width:50px; height:28px; border-radius:15px; background:var(--line); border:none;
+    position:relative; cursor:pointer; flex-shrink:0; transition:.24s;
+  }
+  .bigsw::after {
+    content:''; position:absolute; top:3px; left:3px; width:22px; height:22px;
+    border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:.24s;
+  }
+  .bigsw.on { background:var(--clay); }
+  .bigsw.on::after { left:25px; }
+
+  details.adv { margin-top:14px; }
+  details.adv summary {
+    cursor:pointer; font-size:.78rem; color:var(--teal); font-weight:600;
+    list-style:none; padding:7px 0;
+  }
+  details.adv summary::-webkit-details-marker { display:none; }
+  details.adv summary::before { content:'+ '; }
+  details.adv[open] summary::before { content:'– '; }
+  .fgrid { display:flex; flex-wrap:wrap; gap:6px; padding-top:8px; }
+  .fpill {
+    font-size:.72rem; padding:7px 13px; border-radius:20px; border:1px solid var(--line);
+    background:var(--card-2); color:var(--ink-2); cursor:pointer; font-family:inherit; transition:.18s;
+  }
+  .fpill:hover { border-color:var(--ink-3); }
+  .fpill.on { background:var(--teal); border-color:var(--teal); color:#fff; }
+  .adv-note { font-size:.72rem; color:var(--ink-3); line-height:1.6; margin-top:10px; font-style:italic; }
+  .scope { font-size:.72rem; color:var(--ink-3); margin-top:10px; }
+
+  /* ── step 3: result ── */
+  .hero {
+    text-align:center; padding:8px 0 20px; border-bottom:1px solid var(--line); margin-bottom:18px;
+  }
+  .hero .v {
+    font-family:'Instrument Serif',serif; font-size:5.2rem; line-height:.9;
+    color:var(--teal); letter-spacing:-.03em;
+  }
+  .hero .u { font-size:.8rem; color:var(--ink-2); margin-top:4px; }
+  .hero .sub { font-size:.72rem; color:var(--ink-3); margin-top:7px; }
+  .facts { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .fact { padding:13px 14px; background:var(--card-2); border-radius:12px; }
+  .fact .v { font-family:'DM Mono',monospace; font-size:1.24rem; font-weight:500; margin-top:3px; }
+  .fact .u { font-size:.68rem; color:var(--ink-3); }
+  .split { margin-top:16px; }
+  .sbar { display:flex; height:7px; border-radius:4px; overflow:hidden; background:var(--line); margin:9px 0 9px; }
+  .sbar span { transition:width .45s ease; }
+  .skey { display:flex; flex-wrap:wrap; gap:14px; font-size:.72rem; color:var(--ink-2); }
+  .skey i { width:8px; height:8px; border-radius:2px; display:inline-block; margin-right:5px; }
+  .callout {
+    margin-top:16px; padding:14px 15px; border-radius:12px;
+    background:var(--teal-lt); border-left:3px solid var(--teal);
+    font-size:.79rem; line-height:1.6; color:var(--ink-2);
+  }
+  .empty-res { text-align:center; padding:26px 10px; color:var(--ink-3); font-size:.85rem; line-height:1.8; }
+  .actions { display:flex; gap:9px; margin-top:18px; }
+  .btn {
+    flex:1; padding:13px; border-radius:11px; border:1px solid var(--teal);
+    background:var(--teal); color:#fff; font-family:inherit; font-size:.85rem;
+    font-weight:600; cursor:pointer; transition:.2s;
+  }
+  .btn:hover { background:#164a47; }
+  .btn.ghost { background:transparent; color:var(--teal); }
+  .btn.ghost:hover { background:var(--teal-lt); }
+
+  .foot {
+    margin-top:22px; font-size:.71rem; color:var(--ink-3); line-height:1.75;
+  }
+  .foot b { color:var(--ink-2); }
+  .foot code { font-family:'DM Mono',monospace; font-size:.95em; color:var(--teal); }
+
+  @keyframes up { from{opacity:0;transform:translateY(13px)} to{opacity:1;transform:none} }
+  .anim { animation:up .55s cubic-bezier(.2,.7,.3,1) both; }
+
+  @media (max-width:480px) {
+    .facts { grid-template-columns:1fr; }
+    .hero .v { font-size:4.2rem; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="top anim">
+    <h1>Bandwidth <em>Calculator</em></h1>
+    <p>Rhombus uplink sizing · built on measured production traffic</p>
+  </div>
+
+  <div class="steps anim" style="animation-delay:.05s">
+    <div class="step-pip" id="pip0"><i></i></div>
+    <div class="step-pip" id="pip1"><i></i></div>
+    <div class="step-pip" id="pip2"><i></i></div>
+  </div>
+
+  <div class="card anim" style="animation-delay:.1s">
+    <div class="c-hd">
+      <span class="n">STEP ONE</span>
+      <h2>What's going in?</h2>
+      <p>Set a quantity for each model. Search to filter the list.</p>
+    </div>
+    <input class="search" id="q" placeholder="Filter models — try R4, 360, multisensor…" oninput="buildPicks(this.value)">
+    <div class="picks" id="picks"></div>
+  </div>
+
+  <div class="card anim" style="animation-delay:.15s">
+    <div class="c-hd">
+      <span class="n">STEP TWO</span>
+      <h2>How busy is the view?</h2>
+      <p>This sets how much of each camera's encoder ceiling actually leaves the building.</p>
+    </div>
+    <div class="opts" id="opts"></div>
+
+    <div class="archrow" id="archrow">
+      <div class="a-t">
+        <b>Cloud Archiving</b>
+        <span>The single biggest lever — an 18&times; swing. On, cameras upload continuously;
+        off, only on events. Retention length doesn't change upload.</span>
+      </div>
+      <button class="bigsw" id="archsw" onclick="toggleAllArchive()" aria-label="cloud archiving"></button>
+    </div>
+    <div class="scope" id="archscope"></div>
+
+    <details class="adv">
+      <summary>AI features (optional, estimates only)</summary>
+      <div class="fgrid" id="fgrid"></div>
+      <p class="adv-note">Applied to every model with a quantity. These are unvalidated payload
+      estimates — the byte export reports one total per device, so per-feature cost can't be
+      separated from scene activity. Timelapse is the exception: it adds each model's own idle tier.</p>
+    </details>
+  </div>
+
+  <div class="card anim" style="animation-delay:.2s">
+    <div class="c-hd">
+      <span class="n">STEP THREE</span>
+      <h2>Size the connection</h2>
+    </div>
+    <div id="result"></div>
+  </div>
+
+  <div class="foot">
+    <b>Provenance.</b> Encoder ladders from <code>VIDEO_AGENT_LOG</code> dash-quality transitions,
+    one online unit per model across 17 models, ~21 h each. Activity factors and peak ratios from a
+    7-day hourly byte export covering 41 cameras and 7 DR40 readers. Fifteen devices appear in both
+    datasets; on those the log-derived ceiling predicted actual bytes within &plusmn;17% wherever
+    the scene was active.<br><br>
+    <b>Limits.</b> One organisation, so per-model samples are small (1&ndash;5 cameras). Activity
+    dominates the error budget — two identical cameras in one building differed 500&times; on scene
+    content alone, so rate each camera on its own view rather than applying one profile site-wide.
+    Recommended speed excludes non-Rhombus traffic on the uplink.
+  </div>
+
+</div>
+
+<script src="model.js"></script>
+<script>
+const AI = { timelapse:"Timelapse", faceRecog:"Face Recognition", lpr:"LPR", ppe:"PPE",
+             peopleocc:"People / Occupancy", crosscount:"Cross Counting", aisearch:"AI Search" };
+const AI_KEYS = Object.keys(AI);
+let globalAI = {}; AI_KEYS.forEach(k => globalAI[k] = false);
+let archiveAll = true;
+
+function buildPicks(filter='') {
+  const f = filter.trim().toLowerCase();
+  const match = c => !f || c.model.toLowerCase().includes(f) || c.mp.toLowerCase().includes(f)
+                     || c.res.toLowerCase().includes(f) || (c.vsrc>1 && 'multisensor'.includes(f));
+  let html = '', divided = false;
+  CAMERAS.forEach((cam, i) => {
+    if (!match(cam)) return;
+    if (cam.legacy && !divided) {
+      divided = true;
+      html += `<div class="divider-lbl lbl">Legacy / discontinued</div>`;
+    }
+    const est = cam.src === 'est' ? '<span class="est" title="No log or byte data — standard ladder assumed">◇ est</span>' : '';
+    html += `
+      <div class="pick ${cam.legacy?'legacy':''}" data-i="${i}">
+        <div class="pk-id">
+          <div class="pk-m">${cam.model} ${est}</div>
+          <div class="pk-s">${cam.mp} · ${(cam.activeKbps*cam.vsrc).toLocaleString()} kbps ceiling${cam.vsrc>1?` · ${cam.vsrc} sources`:''}</div>
+        </div>
+        <div class="qbox">
+          <button onclick="bump(${i},-1)" aria-label="less">–</button>
+          <input type="number" min="0" value="${state.cams[i].qty}" id="q${i}" oninput="setQty(${i},this.value)">
+          <button onclick="bump(${i},1)" aria-label="more">+</button>
+        </div>
+      </div>`;
+  });
+  document.getElementById('picks').innerHTML = html ||
+    `<div style="padding:18px;text-align:center;color:var(--ink-3);font-size:.82rem">No models match.</div>`;
+  syncPicks();
+}
+
+function bump(i, d) {
+  state.cams[i].qty = Math.max(0, state.cams[i].qty + d);
+  const el = document.getElementById('q'+i);
+  if (el) el.value = state.cams[i].qty;
+  render();
+}
+
+function buildOpts() {
+  document.getElementById('opts').innerHTML = ACTIVITY.map(a => `
+    <button class="opt ${a.key===state.profile?'on':''}" data-k="${a.key}" onclick="setProfile('${a.key}')">
+      <span class="radio"></span>
+      <span>
+        <span class="o-t">${a.key}</span>
+        <span class="o-d">${a.examples}</span>
+        <span class="o-f">${a.stats} · uploads ${(a.archOn*100).toFixed(1)}% of ceiling archived,
+          ${(a.archOff*100).toFixed(1)}% not (n=${a.nOn}/${a.nOff})</span>
+      </span>
+    </button>`).join('');
+  document.getElementById('fgrid').innerHTML = AI_KEYS.map(k =>
+    `<button class="fpill" data-k="${k}" onclick="flipAI('${k}')">${AI[k]}</button>`).join('');
+}
+
+function toggleAllArchive() {
+  archiveAll = !archiveAll;
+  state.cams.forEach(c => c.toggles.archive = archiveAll);
+  render();
+}
+function flipAI(k) {
+  globalAI[k] = !globalAI[k];
+  state.cams.forEach(c => c.toggles[k] = globalAI[k]);
+  render();
+}
+
+function syncPicks() {
+  CAMERAS.forEach((_, i) => {
+    const el = document.querySelector(`.pick[data-i="${i}"]`);
+    if (el) el.classList.toggle('live', state.cams[i].qty > 0);
+  });
+}
+
+function renderResult() {
+  const t = totals();
+  const el = document.getElementById('result');
+  ['pip0','pip1','pip2'].forEach(id => document.getElementById(id).className = 'step-pip');
+  if (!t.cams) {
+    document.getElementById('pip0').className = 'step-pip now';
+    el.innerHTML = `<div class="empty-res">Nothing configured yet.<br>
+      Add at least one camera in step one and the sizing appears here.</div>`;
+    return;
+  }
+  document.getElementById('pip0').className = 'step-pip done';
+  document.getElementById('pip1').className = 'step-pip done';
+  document.getElementById('pip2').className = 'step-pip now';
+
+  el.innerHTML = `
+    <div class="hero">
+      <div class="v">${t.ispMbps}</div>
+      <div class="u">Mbps upload, minimum</div>
+      <div class="sub">busy-hour peak ×1.3, rounded up to the nearest 50</div>
+    </div>
+    <div class="facts">
+      <div class="fact"><span class="lbl">Busy-hour peak</span>
+        <div class="v">${t.peakMbps.toFixed(1)}</div><span class="u">Mbps</span></div>
+      <div class="fact"><span class="lbl">Sustained average</span>
+        <div class="v">${t.avgMbps.toFixed(1)}</div><span class="u">Mbps</span></div>
+      <div class="fact"><span class="lbl">If all saturate at once</span>
+        <div class="v">${t.ceilingMbps.toFixed(1)}</div><span class="u">Mbps absolute max</span></div>
+      <div class="fact"><span class="lbl">Monthly volume</span>
+        <div class="v">${t.monthlyTB.toFixed(2)}</div><span class="u">TB uploaded</span></div>
+    </div>
+    <div class="split">
+      <span class="lbl">What's using it</span>
+      <div class="sbar">
+        <span style="width:${t.split.video}%;background:var(--teal)"></span>
+        <span style="width:${t.split.tl}%;background:var(--clay)"></span>
+        <span style="width:${t.split.ai}%;background:var(--sand)"></span>
+      </div>
+      <div class="skey">
+        <span><i style="background:var(--teal)"></i>Video ${t.split.video.toFixed(1)}%</span>
+        <span><i style="background:var(--clay)"></i>Timelapse ${t.split.tl.toFixed(1)}%</span>
+        <span><i style="background:var(--sand)"></i>Events ${t.split.ai.toFixed(1)}%</span>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>${t.cams} cameras</strong> across ${t.models} model${t.models===1?'':'s'} ·
+      <strong>${t.archived}</strong> archiving to cloud
+      (${Math.round(t.archived/t.cams*100)}%). In the measured fleet, archived cameras uploaded a
+      median 1047 kbps and non-archived just 58 kbps — which is why that switch moves this number
+      more than anything else on the page.
+    </div>
+    <div class="actions">
+      <button class="btn ghost" onclick="copySummary()">Copy summary</button>
+      <button class="btn" onclick="window.print()">Print / PDF</button>
+    </div>`;
+}
+
+function copySummary() {
+  const t = totals();
+  const lines = [
+    `Rhombus bandwidth estimate — ${new Date().toLocaleDateString()}`,
+    `Scene activity: ${state.profile}`,
+    `Cameras: ${t.cams} across ${t.models} models (${t.archived} archiving)`,
+    ``,
+    `Recommended uplink:  ${t.ispMbps} Mbps`,
+    `Busy-hour peak:      ${t.peakMbps.toFixed(1)} Mbps`,
+    `Sustained average:   ${t.avgMbps.toFixed(1)} Mbps`,
+    `All saturated:       ${t.ceilingMbps.toFixed(1)} Mbps`,
+    `Monthly volume:      ${t.monthlyTB.toFixed(2)} TB`,
+    ``,
+    `Per model:`,
+    ...CAMERAS.map((c, i) => { const m = camMetrics(i); return m.qty
+      ? `  ${c.model} ×${m.qty} — ${Math.round(m.avgKbps)} kbps avg, ${Math.round(m.peakKbps)} peak` : null;
+    }).filter(Boolean),
+  ];
+  navigator.clipboard.writeText(lines.join('\n'));
+  const b = document.querySelector('.btn.ghost');
+  const was = b.textContent; b.textContent = 'Copied';
+  setTimeout(() => b.textContent = was, 1400);
+}
+
+function render() {
+  document.querySelectorAll('.opt').forEach(o => o.classList.toggle('on', o.dataset.k === state.profile));
+  document.getElementById('archsw').className = 'bigsw' + (archiveAll ? ' on' : '');
+  document.getElementById('archrow').className = 'archrow' + (archiveAll ? ' on' : '');
+  document.getElementById('archscope').textContent = archiveAll
+    ? 'On for every model — the realistic default for Enterprise sites.'
+    : 'Off for every model — event-only upload, roughly 18× lower.';
+  document.querySelectorAll('.fpill').forEach(p => p.classList.toggle('on', globalAI[p.dataset.k]));
+  syncPicks();
+  renderResult();
+}
+
+buildOpts();
+buildPicks();
+render();
+</script>
+</body>
+</html>
