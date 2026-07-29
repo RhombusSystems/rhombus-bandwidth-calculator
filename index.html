@@ -93,6 +93,11 @@
   .search::placeholder { color:var(--ink-3); }
   .picks { display:flex; flex-direction:column; gap:7px; max-height:min(52vh,420px); overflow-y:auto; padding-right:2px; }
   .pick {
+    /* flex:none is load-bearing. .picks is a capped-height flex column, so
+       without it the rows inherit flex-shrink:1 and get squashed to fit the
+       container instead of overflowing it — the list collapses to slivers and
+       scrollHeight never exceeds clientHeight, so it cannot scroll either. */
+    flex:none;
     border:1px solid var(--line); border-radius:13px; background:var(--card-2);
     transition:border-color .2s, background-color .2s; overflow:hidden;
   }

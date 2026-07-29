@@ -73,6 +73,7 @@
   .search::placeholder { color:var(--ink-3); }
   .picks { display:flex; flex-direction:column; gap:7px; max-height:340px; overflow-y:auto; padding-right:3px; }
   .pick {
+    flex:none;  /* .picks is a capped-height flex column; without this the rows shrink to fit */
     display:flex; align-items:center; gap:13px; padding:11px 13px;
     border:1px solid var(--line); border-radius:12px; background:var(--card-2);
     transition:.2s; cursor:default;
