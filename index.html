@@ -15,7 +15,10 @@
 <style>
   :root {
     --bg:#eeeae3; --card:#fdfcfa; --card-2:#f6f3ee; --card-3:#efebe4;
-    --ink:#211f1c; --ink-2:#5f5a52; --ink-3:#9a938a;
+    /* ink-2 / ink-3 are tuned to clear WCAG AA (4.5:1) for small text against
+       --card-2, the lightest surface they sit on. The earlier #9a938a measured
+       2.75:1, which is unreadable at 10px in daylight on a jobsite. */
+    --ink:#211f1c; --ink-2:#4f4a43; --ink-3:#6f6a62;
     --line:#e0dbd2; --line-2:#d3cdc2;
     --teal:#1d5c58; --teal-lt:#e4efec; --teal-dp:#164a47;
     --clay:#b5502f; --clay-lt:#fbf0eb; --sand:#c9a227;
@@ -23,7 +26,7 @@
   }
   body.dark {
     --bg:#15171a; --card:#1d2024; --card-2:#23272c; --card-3:#2a2f35;
-    --ink:#e9e6e1; --ink-2:#a8a29a; --ink-3:#7c766e;
+    --ink:#e9e6e1; --ink-2:#b8b2a9; --ink-3:#98928a;   /* both clear 4.5:1 on --card-2 */
     --line:#31363c; --line-2:#3d444b;
     --teal:#5fbdb2; --teal-lt:#1c2d2c; --teal-dp:#7ad0c5;
     --clay:#e2846a; --clay-lt:#2c2020; --sand:#d9b545;
@@ -40,7 +43,11 @@
   }
   .mono { font-family:'DM Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums; }
   .lbl { font-size:.63rem; text-transform:uppercase; letter-spacing:.15em; font-weight:600; color:var(--ink-3); }
-  button, input { font-family:inherit; }
+  /* color:inherit is a guard, not decoration. Buttons and inputs do NOT inherit
+     colour from their parent by default — they take a UA colour (black in both
+     themes). Any button whose text relies on inheritance renders near-black on a
+     dark card. This caught the scene-activity options once already. */
+  button, input { font-family:inherit; color:inherit; }
   :focus-visible { outline:2px solid var(--teal); outline-offset:2px; border-radius:4px; }
 
   .shell { max-width:680px; margin:0 auto; padding:22px 20px 100px; }
@@ -167,7 +174,7 @@
   .opt {
     display:flex; align-items:flex-start; gap:12px; padding:13px 14px;
     border:1px solid var(--line); border-radius:13px; background:var(--card-2);
-    cursor:pointer; transition:.2s; text-align:left; width:100%;
+    cursor:pointer; transition:.2s; text-align:left; width:100%; color:var(--ink);
   }
   .opt:hover { border-color:var(--ink-3); }
   .opt.on { border-color:var(--teal); background:var(--teal-lt); box-shadow:inset 0 0 0 1px var(--teal); }
@@ -252,6 +259,9 @@
   body.dark .btn { color:var(--bg); }
   .btn:hover { background:var(--teal-dp); border-color:var(--teal-dp); }
   .btn.ghost { background:transparent; color:var(--teal); }
+  /* Must out-specify `body.dark .btn` (0,2,1), which would otherwise repaint
+     ghost text in --bg and render it invisible on the transparent background. */
+  body.dark .btn.ghost { color:var(--teal); }
   .btn.ghost:hover { background:var(--teal-lt); }
 
   /* ── reference ── */
@@ -271,7 +281,9 @@
   .ev.bytes { background:var(--clay-lt); color:var(--clay); }
   .ev.est { background:var(--card-3); color:var(--ink-3); }
 
-  .foot { margin-top:20px; font-size:.71rem; color:var(--ink-3); line-height:1.7; }
+  /* ink-2, not ink-3: this sits on --bg rather than a card, where ink-3 lands at
+     4.47:1 — just under AA. It is the provenance text, worth being readable. */
+  .foot { margin-top:20px; font-size:.71rem; color:var(--ink-2); line-height:1.7; }
   .foot b { color:var(--ink-2); }
   .foot code { font-family:'DM Mono',monospace; font-size:.95em; color:var(--teal); }
   .foot p { margin-bottom:10px; }
