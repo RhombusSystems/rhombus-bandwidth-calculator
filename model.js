@@ -124,7 +124,20 @@ const OVERHEAD_MAP = {
 const OCC_OVERHEAD = FEATURES.find(f=>f.name==="Occupancy Counting");
 const OBJ_SEARCH   = FEATURES.find(f=>f.name==="Object Search");
 
-/* ── Engine ───────────────────────────────────────────────────────────────── */
+
+/* ── Engine ───────────────────────────────────────────────────────────────────
+
+   State is per-LOCATION, because bandwidth is a property of an uplink, not of a
+   project. A five-site job needs five ISP recommendations, not one; summing them
+   into a single number would be meaningless. Each location therefore carries its
+   own camera list, scene activity and archiving default, and produces its own
+   sizing. Project-level output is a roll-up plus a circuit count.
+
+   Within a location, settings inherit: `location.profile` / `location.archive`
+   are the site defaults, and a model's `profile`/`archive` of null means
+   "inherit". This keeps the common case to one decision while still letting a
+   mixed site be described, which matters because archiving is an 18x lever.
+   ─────────────────────────────────────────────────────────────────────────── */
 
 const FEATURE_LABELS = {
   archive:"Cloud Archiving", timelapse:"Timelapse", faceRecog:"Face Recognition",
@@ -132,71 +145,83 @@ const FEATURE_LABELS = {
   crosscount:"Cross Counting", aisearch:"AI Search",
 };
 
-/* Site-wide settings are the defaults every model inherits. A model may
-   override activity and/or archiving individually — `profile: null` and
-   `archive: null` mean "inherit the site setting". This keeps the common case
-   to one decision while still letting a mixed site be described accurately,
-   which matters because archiving is an 18x lever and real sites are mixed. */
-const state = {
-  profile: "Moderate",
-  // Archiving defaults on: it ships with Enterprise at 30 days, and 27 of the
-  // 40 cameras in the reference fleet have it enabled.
-  archive: true,
-  cams: CAMERAS.map(() => ({
-    qty: 0,
-    profile: null,   // null = inherit site activity
-    archive: null,   // null = inherit site archiving
-    toggles: { timelapse:false, faceRecog:false, lpr:false,
-               ppe:false, peopleocc:false, crosscount:false, aisearch:false },
-  })),
-};
+const STORE_KEY = 'bw-project-v1';
 
-function siteActivity() {
-  return ACTIVITY.find(a => a.key === state.profile) || ACTIVITY[1];
+function newLocation(name) {
+  return {
+    name,
+    profile: "Moderate",
+    // Archiving defaults on: it ships with Enterprise at 30 days, and 27 of the
+    // 40 cameras in the reference fleet have it enabled.
+    archive: true,
+    cams: CAMERAS.map(() => ({
+      qty: 0,
+      profile: null,   // null = inherit this location's activity
+      archive: null,   // null = inherit this location's archiving
+      toggles: { timelapse:false, faceRecog:false, lpr:false,
+                 ppe:false, peopleocc:false, crosscount:false, aisearch:false },
+    })),
+  };
 }
 
-/** Effective activity band for one model, honouring any override. */
-function activityFor(idx) {
-  const key = state.cams[idx].profile || state.profile;
+const state = {
+  title: "",
+  active: 0,
+  locations: [ newLocation("Main site") ],
+};
+
+/** The location a view is currently editing. */
+function loc(li) { return state.locations[li === undefined ? state.active : li]; }
+
+function siteActivity(li) {
+  const l = loc(li);
+  return ACTIVITY.find(a => a.key === l.profile) || ACTIVITY[1];
+}
+
+/** Effective activity band for one model at one location, honouring overrides. */
+function activityFor(idx, li) {
+  const l = loc(li);
+  const key = l.cams[idx].profile || l.profile;
   return ACTIVITY.find(a => a.key === key) || ACTIVITY[1];
 }
 
-/** Effective archiving state for one model, honouring any override. */
-function archiveFor(idx) {
-  const o = state.cams[idx].archive;
-  return o === null ? state.archive : o;
+/** Effective archiving state for one model at one location. */
+function archiveFor(idx, li) {
+  const l = loc(li);
+  const o = l.cams[idx].archive;
+  return o === null ? l.archive : o;
 }
 
-/** True when this model differs from the site-wide defaults. */
-function isOverridden(idx) {
-  const c = state.cams[idx];
+/** True when this model differs from its location's defaults. */
+function isOverridden(idx, li) {
+  const c = loc(li).cams[idx];
   return c.profile !== null || c.archive !== null;
 }
 
-function getOverhead(feat, idx) {
-  const p = activityFor(idx).key;
+function getOverhead(feat, idx, li) {
+  const p = activityFor(idx, li).key;
   return p === "Low" ? feat.low : p === "High" ? feat.high : feat.mod;
 }
 
-function calcAIOverhead(idx) {
-  let oh = getOverhead(OBJ_SEARCH, idx);
-  const t = state.cams[idx].toggles;
+function calcAIOverhead(idx, li) {
+  let oh = getOverhead(OBJ_SEARCH, idx, li);
+  const t = loc(li).cams[idx].toggles;
   for (const key of TOGGLE_COLS) {
     if (t[key] && OVERHEAD_MAP[key]) {
-      oh += getOverhead(OVERHEAD_MAP[key], idx);
-      if (key === "peopleocc") oh += getOverhead(OCC_OVERHEAD, idx);
+      oh += getOverhead(OVERHEAD_MAP[key], idx, li);
+      if (key === "peopleocc") oh += getOverhead(OCC_OVERHEAD, idx, li);
     }
   }
   return oh;
 }
 
-/** Everything a view needs about one model row. */
-function camMetrics(idx) {
-  const cam = CAMERAS[idx], s = state.cams[idx], act = activityFor(idx);
+/** Everything a view needs about one model row at one location. */
+function camMetrics(idx, li) {
+  const cam = CAMERAS[idx], s = loc(li).cams[idx], act = activityFor(idx, li);
   const ceiling = cam.activeKbps * cam.vsrc;
-  const archive = archiveFor(idx);
+  const archive = archiveFor(idx, li);
   const factor  = archive ? act.archOn : act.archOff;
-  const aiKbps  = calcAIOverhead(idx);
+  const aiKbps  = calcAIOverhead(idx, li);
   const tlKbps  = s.toggles.timelapse ? cam.idleKbps : 0;
   const videoAvg = ceiling * factor;
   // Peak: average scaled by the observed p95/avg ratio, but a camera can never
@@ -204,56 +229,151 @@ function camMetrics(idx) {
   const videoPeak = Math.min(ceiling, videoAvg * (archive ? PEAK_RATIO.on : PEAK_RATIO.off));
   return {
     idx, cam, qty: s.qty, ceiling, archive, factor, aiKbps, tlKbps,
-    videoAvg, videoPeak, activityKey: act.key, overridden: isOverridden(idx),
+    videoAvg, videoPeak, activityKey: act.key, overridden: isOverridden(idx, li),
     avgKbps: videoAvg + aiKbps + tlKbps,
     peakKbps: videoPeak + aiKbps + tlKbps,
     activeFeatures: TOGGLE_COLS.filter(k => s.toggles[k]),
   };
 }
 
-/** Deployment-wide totals. */
-function totals() {
-  let cams=0, video=0, tl=0, ai=0, peak=0, ceiling=0, archived=0, models=0;
+const MONTH_SECS = 60 * 60 * 24 * 30;
+
+/** Totals for a single location — this is what sizes that site's circuit. */
+function totals(li) {
+  let cams=0, video=0, tl=0, ai=0, peak=0, ceiling=0, archived=0, models=0, tuned=0;
   CAMERAS.forEach((_, i) => {
-    const m = camMetrics(i);
+    const m = camMetrics(i, li);
     if (m.qty <= 0) return;
-    models++;
-    cams += m.qty;
+    models++; cams += m.qty;
     video += m.videoAvg * m.qty;
     tl += m.tlKbps * m.qty;
     ai += m.aiKbps * m.qty;
     peak += m.peakKbps * m.qty;
     ceiling += m.ceiling * m.qty;
     if (m.archive) archived += m.qty;
+    if (m.overridden) tuned++;
   });
   const avgKbps = video + tl + ai;
   const peakMbps = peak / 1000;
   return {
-    cams, models, archived,
+    li: li === undefined ? state.active : li,
+    name: loc(li).name, cams, models, archived, tuned,
     avgMbps: avgKbps / 1000,
     peakMbps,
     ceilingMbps: ceiling / 1000,
     // Size the link off measured peak, then add 30% for protocol overhead,
     // retransmits and non-camera traffic sharing the uplink.
-    ispMbps: Math.ceil(peakMbps * 1.3 / 50) * 50,
-    monthlyTB: avgKbps * 1000 / 8 * 60 * 60 * 24 * 30 / 1e12,
+    ispMbps: cams ? Math.ceil(peakMbps * 1.3 / 50) * 50 : 0,
+    monthlyTB: avgKbps * 1000 / 8 * MONTH_SECS / 1e12,
     split: avgKbps > 0
       ? { video: video/avgKbps*100, tl: tl/avgKbps*100, ai: ai/avgKbps*100 }
       : { video: 0, tl: 0, ai: 0 },
   };
 }
 
-function setProfile(p) { state.profile = p; render(); }
-function setQty(i, v)  { state.cams[i].qty = Math.max(0, parseInt(v) || 0); render(); }
-function toggle(i, k)  { state.cams[i].toggles[k] = !state.cams[i].toggles[k]; render(); }
+/** Project roll-up. Note ispMbps is a SUM OF SEPARATE CIRCUITS, not one link. */
+function grandTotals() {
+  const per = state.locations.map((_, i) => totals(i));
+  const live = per.filter(t => t.cams > 0);
+  return {
+    perLocation: per,
+    liveLocations: live,
+    locations: state.locations.length,
+    circuits: live.length,
+    cams: per.reduce((n,t) => n + t.cams, 0),
+    archived: per.reduce((n,t) => n + t.archived, 0),
+    avgMbps: per.reduce((n,t) => n + t.avgMbps, 0),
+    peakMbps: per.reduce((n,t) => n + t.peakMbps, 0),
+    monthlyTB: per.reduce((n,t) => n + t.monthlyTB, 0),
+    ispTotalMbps: per.reduce((n,t) => n + t.ispMbps, 0),
+  };
+}
 
-/* ── overrides ─────────────────────────────────────────────────────────────── */
-function setSiteArchive(on)   { state.archive = on; render(); }
-function setCamProfile(i, p)  { state.cams[i].profile = p; render(); }   // null = inherit
-function setCamArchive(i, a)  { state.cams[i].archive = a; render(); }   // null = inherit
+/* ── mutations ─────────────────────────────────────────────────────────────── */
+function setProfile(p)     { loc().profile = p; commit(); }
+function setQty(i, v)      { loc().cams[i].qty = Math.max(0, parseInt(v) || 0); commit(); }
+function toggle(i, k)      { loc().cams[i].toggles[k] = !loc().cams[i].toggles[k]; commit(); }
+function setSiteArchive(a) { loc().archive = a; commit(); }
+function setCamProfile(i,p){ loc().cams[i].profile = p; commit(); }   // null = inherit
+function setCamArchive(i,a){ loc().cams[i].archive = a; commit(); }   // null = inherit
 function clearOverride(i) {
-  const c = state.cams[i];
+  const c = loc().cams[i];
   c.profile = null; c.archive = null;
   Object.keys(c.toggles).forEach(k => c.toggles[k] = false);
-  render();
+  commit();
 }
+function setTitle(t) { state.title = t; save(); }
+
+function addLocation(name) {
+  state.locations.push(newLocation(name || `Location ${state.locations.length + 1}`));
+  state.active = state.locations.length - 1;
+  commit();
+}
+function renameLocation(li, name) { state.locations[li].name = name || 'Untitled'; commit(); }
+function removeLocation(li) {
+  if (state.locations.length === 1) return false;   // never leave zero locations
+  state.locations.splice(li, 1);
+  if (state.active >= state.locations.length) state.active = state.locations.length - 1;
+  commit();
+  return true;
+}
+function selectLocation(li) { state.active = li; commit(); }
+function duplicateLocation(li) {
+  const copy = JSON.parse(JSON.stringify(state.locations[li]));
+  copy.name = `${copy.name} (copy)`;
+  state.locations.splice(li + 1, 0, copy);
+  state.active = li + 1;
+  commit();
+}
+
+/* ── persistence ───────────────────────────────────────────────────────────── */
+function save() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify({
+      v: 1, title: state.title, active: state.active, locations: state.locations,
+    }));
+  } catch (e) { /* private browsing, quota — not worth surfacing */ }
+}
+
+/** Restore, tolerating older or hand-edited payloads. Shape is re-validated
+    against CAMERAS so a model added to the catalogue later cannot desync. */
+function load() {
+  let raw;
+  try { raw = localStorage.getItem(STORE_KEY); } catch (e) { return false; }
+  if (!raw) return false;
+  let d;
+  try { d = JSON.parse(raw); } catch (e) { return false; }
+  if (!d || !Array.isArray(d.locations) || !d.locations.length) return false;
+
+  state.title = typeof d.title === 'string' ? d.title : '';
+  state.locations = d.locations.map(src => {
+    const l = newLocation(typeof src.name === 'string' ? src.name : 'Main site');
+    if (ACTIVITY.some(a => a.key === src.profile)) l.profile = src.profile;
+    if (typeof src.archive === 'boolean') l.archive = src.archive;
+    if (Array.isArray(src.cams)) {
+      src.cams.slice(0, l.cams.length).forEach((c, i) => {
+        if (!c) return;
+        l.cams[i].qty = Math.max(0, parseInt(c.qty) || 0);
+        l.cams[i].profile = ACTIVITY.some(a => a.key === c.profile) ? c.profile : null;
+        l.cams[i].archive = typeof c.archive === 'boolean' ? c.archive : null;
+        if (c.toggles) Object.keys(l.cams[i].toggles).forEach(k => {
+          l.cams[i].toggles[k] = !!c.toggles[k];
+        });
+      });
+    }
+    return l;
+  });
+  state.active = Math.min(Math.max(0, parseInt(d.active) || 0), state.locations.length - 1);
+  return true;
+}
+
+function clearProject() {
+  state.title = '';
+  state.locations = [ newLocation('Main site') ];
+  state.active = 0;
+  commit();
+}
+
+/** Persist, then let the view redraw. `render` is defined by whichever page
+    loaded this model. */
+function commit() { save(); if (typeof render === 'function') render(); }

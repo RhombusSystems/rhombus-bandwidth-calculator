@@ -283,6 +283,52 @@
 
   /* ink-2, not ink-3: this sits on --bg rather than a card, where ink-3 lands at
      4.47:1 — just under AA. It is the provenance text, worth being readable. */
+  /* ── project header: title + location switcher ── */
+  .project { margin-bottom:15px; }
+  .title-in {
+    width:100%; padding:11px 14px; border:1px solid var(--line); border-radius:12px;
+    background:var(--card); font-family:'Instrument Serif',Georgia,serif; font-size:1.25rem;
+    color:var(--ink); transition:.2s;
+  }
+  .title-in:focus { outline:none; border-color:var(--teal); }
+  .title-in::placeholder { color:var(--ink-3); font-style:italic; }
+  .locbar { display:flex; gap:6px; margin-top:9px; flex-wrap:wrap; align-items:center; }
+  .loctab {
+    display:flex; align-items:center; gap:7px; padding:7px 11px; border-radius:10px;
+    border:1px solid var(--line); background:var(--card); cursor:pointer;
+    font-size:.78rem; color:var(--ink-2); transition:.18s; max-width:100%;
+  }
+  .loctab:hover { border-color:var(--ink-3); }
+  .loctab.on { border-color:var(--teal); background:var(--teal-lt); color:var(--ink); font-weight:600; }
+  .loctab .n { font-family:'DM Mono',monospace; font-size:.66rem; color:var(--ink-3); }
+  .loctab.on .n { color:var(--teal); }
+  .loc-add {
+    padding:7px 11px; border-radius:10px; border:1px dashed var(--line-2);
+    background:transparent; color:var(--ink-2); cursor:pointer; font-size:.78rem; transition:.18s;
+  }
+  .loc-add:hover { border-color:var(--teal); color:var(--teal); }
+  .loc-tools { display:flex; gap:6px; margin-top:9px; flex-wrap:wrap; }
+  .loc-tool {
+    padding:5px 10px; border-radius:8px; border:1px solid var(--line); background:var(--card-2);
+    color:var(--ink-2); cursor:pointer; font-size:.7rem; transition:.18s;
+  }
+  .loc-tool:hover { border-color:var(--ink-3); color:var(--ink); }
+  .loc-tool.danger:hover { border-color:var(--clay); color:var(--clay); }
+
+  /* ── project roll-up ── */
+  .rollup { margin-top:15px; }
+  .rl-row {
+    display:flex; align-items:baseline; gap:10px; padding:9px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .rl-row:last-of-type { border-bottom:none; }
+  .rl-row .nm { flex:1; font-size:.84rem; min-width:0; }
+  .rl-row .nm small { display:block; color:var(--ink-3); font-size:.68rem; }
+  .rl-row .mb { font-family:'DM Mono',monospace; font-size:.95rem; font-weight:500; }
+  .rl-row.tot { border-top:2px solid var(--ink); margin-top:4px; padding-top:11px; }
+  .rl-row.tot .mb { font-size:1.15rem; color:var(--teal); }
+  .rl-note { font-size:.72rem; color:var(--ink-3); margin-top:9px; line-height:1.5; }
+
   .foot { margin-top:20px; font-size:.71rem; color:var(--ink-2); line-height:1.7; }
   .foot b { color:var(--ink-2); }
   .foot code { font-family:'DM Mono',monospace; font-size:.95em; color:var(--teal); }
@@ -298,11 +344,60 @@
     .shell { padding:18px 15px 80px; }
     .card { padding:20px 16px; }
   }
+  /* ── print / PDF ──────────────────────────────────────────────────────────
+     Printing renders a purpose-built document rather than the interactive UI.
+     The screen only ever shows one location at a time, so printing the live DOM
+     would silently omit every other site. #print-doc holds all of them. */
+  #print-doc { display:none; }
   @media print {
-    body { background:#fff; } .card { box-shadow:none; break-inside:avoid; }
-    .theme, .actions, .search, .qbox, .pk-tune, .steps, details.adv { display:none !important; }
-    .picks { max-height:none; overflow:visible; }
-    .pick:not(.live) { display:none; }
+    @page { size:letter; margin:0.55in 0.6in; }
+    body { background:#fff !important; color:#000; }
+    body.dark { background:#fff !important; }
+    .shell { display:none !important; }
+    #print-doc { display:block; font-family:'Figtree',sans-serif; color:#1a1a1a; }
+    #print-doc .p-title {
+      font-family:'Instrument Serif',Georgia,serif; font-size:26px; line-height:1.1;
+      margin-bottom:3px; color:#1d5c58;
+    }
+    #print-doc .p-meta {
+      font-size:10px; color:#666; border-bottom:2px solid #1d5c58;
+      padding-bottom:9px; margin-bottom:16px;
+    }
+    #print-doc .p-loc { break-inside:avoid; margin-bottom:20px; }
+    #print-doc .p-loc + .p-loc { break-before:page; }
+    #print-doc h3 {
+      font-family:'Instrument Serif',Georgia,serif; font-size:17px; font-weight:400;
+      margin-bottom:2px;
+    }
+    #print-doc .p-sub { font-size:10px; color:#777; margin-bottom:9px; }
+    #print-doc .p-nums { display:flex; gap:8px; margin-bottom:11px; flex-wrap:wrap; }
+    #print-doc .p-num {
+      border:1px solid #d8d4cc; border-radius:6px; padding:7px 11px; min-width:96px;
+    }
+    #print-doc .p-num.key { border-color:#1d5c58; background:#eef5f3; }
+    #print-doc .p-num .k {
+      font-size:7.5px; text-transform:uppercase; letter-spacing:.09em; color:#888; font-weight:700;
+    }
+    #print-doc .p-num .v {
+      font-family:'DM Mono',monospace; font-size:16px; font-weight:500; margin-top:2px;
+    }
+    #print-doc .p-num.key .v { color:#1d5c58; }
+    #print-doc .p-num .u { font-size:8px; color:#999; }
+    #print-doc table { width:100%; border-collapse:collapse; margin-bottom:8px; }
+    #print-doc th {
+      background:#1d5c58; color:#fff; padding:5px 7px; font-size:8px;
+      text-transform:uppercase; letter-spacing:.06em; text-align:left;
+    }
+    #print-doc th.r, #print-doc td.r { text-align:right; }
+    #print-doc td { padding:4px 7px; border-bottom:1px solid #eee; font-size:9.5px; }
+    #print-doc td.mono, #print-doc td.r { font-family:'DM Mono',monospace; }
+    #print-doc tr.tot td { border-top:1.5px solid #1a1a1a; font-weight:700; }
+    #print-doc .p-summary { break-before:page; }
+    #print-doc .p-method {
+      margin-top:14px; padding-top:9px; border-top:1px solid #ddd;
+      font-size:8px; color:#666; line-height:1.55;
+    }
+    #print-doc .p-empty { font-size:10px; color:#888; font-style:italic; }
   }
 </style>
 </head>
@@ -318,6 +413,13 @@
     </button>
   </div>
 
+  <div class="project anim" style="animation-delay:.04s">
+    <input class="title-in" id="title" placeholder="Project name — e.g. Ice Blocks HQ Retrofit"
+           oninput="setTitle(this.value)" aria-label="Project name">
+    <div class="locbar" id="locbar"></div>
+    <div class="loc-tools" id="loctools"></div>
+  </div>
+
   <div class="steps anim" style="animation-delay:.05s">
     <div class="pip" id="pip0"><i></i></div>
     <div class="pip" id="pip1"><i></i></div>
@@ -327,7 +429,7 @@
   <div class="card anim" style="animation-delay:.1s">
     <div class="c-hd">
       <span class="n">STEP ONE</span>
-      <h2>What's going in?</h2>
+      <h2>What's going in <span id="at-loc" style="color:var(--teal)"></span>?</h2>
       <p>Set a quantity for each model. Open <em>Tune</em> on any model to override the
          site settings just for that one.</p>
     </div>
@@ -351,7 +453,7 @@
         <span>The single biggest lever &mdash; an 18&times; swing. On, cameras upload continuously;
         off, only on events. Retention length doesn't change upload.</span>
       </div>
-      <button class="bigsw" id="archsw" onclick="setSiteArchive(!state.archive)"
+      <button class="bigsw" id="archsw" onclick="setSiteArchive(!loc().archive)"
               role="switch" aria-label="Cloud archiving site-wide"></button>
     </div>
     <div class="scope" id="archscope"></div>
@@ -369,8 +471,19 @@
     <div class="c-hd">
       <span class="n">STEP THREE</span>
       <h2>Size the connection</h2>
+      <p id="result-scope"></p>
     </div>
     <div id="result"></div>
+  </div>
+
+  <div class="card anim" id="rollup-card" style="animation-delay:.22s; display:none">
+    <div class="c-hd">
+      <span class="n">PROJECT</span>
+      <h2>All locations</h2>
+      <p>Each site needs its own circuit, so these are separate connections &mdash; not one
+         shared pipe.</p>
+    </div>
+    <div class="rollup" id="rollup"></div>
   </div>
 
   <div class="card anim" style="animation-delay:.25s">
@@ -412,6 +525,9 @@
 
 </div>
 
+<!-- Built on demand by renderPrintDoc(); screen-hidden, print-visible. -->
+<div id="print-doc" aria-hidden="true"></div>
+
 <script src="model.js"></script>
 <script>
 const AI = { timelapse:"Timelapse", faceRecog:"Face Recognition", lpr:"LPR", ppe:"PPE",
@@ -444,7 +560,7 @@ function buildPicks(filter = '') {
           </div>
           <div class="qbox">
             <button onclick="bump(${i},-1)" aria-label="Fewer ${cam.model}">–</button>
-            <input type="number" min="0" value="${state.cams[i].qty}" id="q${i}"
+            <input type="number" min="0" value="${loc().cams[i].qty}" id="q${i}"
                    oninput="setQty(${i},this.value)" aria-label="${cam.model} quantity">
             <button onclick="bump(${i},1)" aria-label="More ${cam.model}">+</button>
           </div>
@@ -488,9 +604,9 @@ function buildPicks(filter = '') {
 }
 
 function bump(i, d) {
-  state.cams[i].qty = Math.max(0, state.cams[i].qty + d);
+  loc().cams[i].qty = Math.max(0, loc().cams[i].qty + d);
   const el = document.getElementById('q'+i);
-  if (el) el.value = state.cams[i].qty;
+  if (el) el.value = loc().cams[i].qty;
   render();
 }
 function flipRow(i) {
@@ -500,6 +616,53 @@ function flipRow(i) {
     el.classList.toggle('open', openRows.has(i));
     el.querySelector('.pk-tune').setAttribute('aria-expanded', openRows.has(i));
   }
+}
+
+/* ── locations ──────────────────────────────────────────────────────────── */
+function buildLocbar() {
+  const g = grandTotals();
+  document.getElementById('locbar').innerHTML =
+    state.locations.map((l, i) => {
+      const t = g.perLocation[i];
+      return `<button class="loctab ${i===state.active?'on':''}" onclick="selectLocation(${i})"
+                title="${esc(l.name)}">
+        <span>${esc(l.name)}</span>
+        <span class="n">${t.cams ? t.cams + ' cam' + (t.cams===1?'':'s') : 'empty'}</span>
+      </button>`;
+    }).join('') +
+    `<button class="loc-add" onclick="promptAddLocation()">+ Location</button>`;
+
+  document.getElementById('loctools').innerHTML = `
+    <button class="loc-tool" onclick="promptRenameLocation()">Rename this site</button>
+    <button class="loc-tool" onclick="duplicateLocation(${state.active})">Duplicate</button>
+    ${state.locations.length > 1
+      ? `<button class="loc-tool danger" onclick="promptRemoveLocation()">Delete</button>` : ''}
+    <button class="loc-tool danger" onclick="promptClear()">Clear project</button>`;
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function promptAddLocation() {
+  const n = prompt('Name of the new location?', `Location ${state.locations.length + 1}`);
+  if (n !== null) addLocation(n.trim());
+}
+function promptRenameLocation() {
+  const n = prompt('Rename this location:', loc().name);
+  if (n !== null) renameLocation(state.active, n.trim());
+}
+function promptRemoveLocation() {
+  const t = totals();
+  const warn = t.cams
+    ? `Delete “${loc().name}” and its ${t.cams} camera${t.cams===1?'':'s'}?`
+    : `Delete “${loc().name}”?`;
+  if (confirm(warn)) removeLocation(state.active);
+}
+function promptClear() {
+  if (confirm('Clear the whole project — title and every location? This cannot be undone.'))
+    clearProject();
 }
 
 /* ── step 2 ─────────────────────────────────────────────────────────────── */
@@ -520,7 +683,7 @@ function buildOpts() {
 
 function flipSiteAI(k) {
   siteAI[k] = !siteAI[k];
-  state.cams.forEach(c => c.toggles[k] = siteAI[k]);
+  loc().cams.forEach(c => c.toggles[k] = siteAI[k]);
   render();
 }
 
@@ -558,7 +721,7 @@ function renderResult() {
   document.getElementById('pip1').className = 'pip done';
   document.getElementById('pip2').className = 'pip now';
 
-  const tuned = CAMERAS.reduce((n,_,i) => n + (state.cams[i].qty>0 && isOverridden(i) ? 1 : 0), 0);
+  const tuned = t.tuned;
   const mixed = t.archived > 0 && t.archived < t.cams;
 
   el.innerHTML = `
@@ -604,74 +767,222 @@ function renderResult() {
     <div class="actions">
       <button class="btn ghost" onclick="copySummary()">Copy summary</button>
       <button class="btn ghost" onclick="exportCSV()">CSV</button>
-      <button class="btn" onclick="window.print()">Print / PDF</button>
+      <button class="btn" onclick="printDoc()">Print / PDF</button>
     </div>`;
 }
 
-/* ── exports ────────────────────────────────────────────────────────────── */
-function activeRows() {
-  return CAMERAS.map((_, i) => camMetrics(i)).filter(m => m.qty > 0);
+function renderRollup() {
+  const g = grandTotals();
+  const card = document.getElementById('rollup-card');
+  // Only meaningful once there is more than one location.
+  if (state.locations.length < 2) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  document.getElementById('rollup').innerHTML =
+    g.perLocation.map((t, i) => `
+      <div class="rl-row">
+        <span class="nm">${esc(t.name)}
+          <small>${t.cams ? `${t.cams} camera${t.cams===1?'':'s'} · ${t.archived} archiving · ${t.avgMbps.toFixed(1)} Mbps sustained` : 'no cameras yet'}</small>
+        </span>
+        <span class="mb">${t.ispMbps ? t.ispMbps + ' Mbps' : '—'}</span>
+      </div>`).join('') + `
+      <div class="rl-row tot">
+        <span class="nm">Project total
+          <small>${g.cams} camera${g.cams===1?'':'s'} · ${g.monthlyTB.toFixed(2)} TB/month</small>
+        </span>
+        <span class="mb">${g.ispTotalMbps} Mbps</span>
+      </div>
+      <p class="rl-note">Across <strong>${g.circuits}</strong> independent
+        circuit${g.circuits===1?'':'s'} — not one shared link. Order each site's connection to its
+        own figure above.</p>`;
+}
+
+/* ── exports ──────────────────────────────────────────────────────────────
+   All three exports cover every location, not just the one on screen. */
+function rowsFor(li) {
+  return CAMERAS.map((_, i) => camMetrics(i, li)).filter(m => m.qty > 0);
 }
 function featureList(m) {
   const f = m.activeFeatures.map(k => AI[k]);
   return (m.archive ? ['Cloud Archive'] : []).concat(f).join(', ') || 'Event-only, no features';
 }
+function projectName() { return state.title.trim() || 'Untitled project'; }
+function slug(s) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,48) || 'project';
+}
+const BASIS = 'Measured Rhombus production traffic: VIDEO_AGENT_LOG encoder ladders (17 models) + 7-day hourly byte export (48 devices)';
 
 function exportCSV() {
-  const t = totals();
-  const rows = [['Model','Qty','Cloud Archive','Scene Activity','Features','Ceiling (kbps)',
-                 'Activity (%)','Event Overhead (kbps)','Avg/Cam (kbps)','Peak/Cam (kbps)','Subtotal (Mbps)']];
-  activeRows().forEach(m => rows.push([
-    m.cam.model, m.qty, m.archive ? 'ON' : 'OFF', m.activityKey + (m.overridden ? ' (tuned)' : ''),
-    featureList(m), m.ceiling.toFixed(0), (m.factor*100).toFixed(1),
-    (m.aiKbps + m.tlKbps).toFixed(1), m.avgKbps.toFixed(0), m.peakKbps.toFixed(0),
-    (m.avgKbps*m.qty/1000).toFixed(2),
-  ]));
+  const g = grandTotals();
+  const stamp = new Date().toISOString().slice(0,10);
+  const rows = [];
+  rows.push(['Rhombus Bandwidth Estimate']);
+  rows.push(['Project', projectName()]);
+  rows.push(['Date', stamp]);
+  rows.push(['Locations', state.locations.length]);
+  rows.push(['Circuits required', g.circuits]);
   rows.push([]);
-  rows.push(['Site scene activity', state.profile]);
-  rows.push(['Site cloud archiving', state.archive ? 'ON' : 'OFF']);
-  rows.push(['Total cameras', t.cams]);
-  rows.push(['Cameras archiving', t.archived]);
-  rows.push(['Sustained average (Mbps)', t.avgMbps.toFixed(1)]);
-  rows.push(['Busy-hour peak (Mbps)', t.peakMbps.toFixed(1)]);
-  rows.push(['If all saturate at once (Mbps)', t.ceilingMbps.toFixed(1)]);
-  rows.push(['Monthly volume (TB)', t.monthlyTB.toFixed(2)]);
-  rows.push(['Recommended ISP (Mbps)', t.ispMbps]);
+
+  state.locations.forEach((l, li) => {
+    const t = g.perLocation[li];
+    rows.push([`LOCATION: ${l.name}`]);
+    if (!t.cams) { rows.push(['(no cameras configured)']); rows.push([]); return; }
+    rows.push(['Scene activity', l.profile, 'Cloud archiving', l.archive ? 'ON' : 'OFF']);
+    rows.push(['Model','Qty','Cloud Archive','Scene Activity','Features','Ceiling (kbps)',
+               'Activity (%)','Event Overhead (kbps)','Avg/Cam (kbps)','Peak/Cam (kbps)','Subtotal (Mbps)']);
+    rowsFor(li).forEach(m => rows.push([
+      m.cam.model, m.qty, m.archive ? 'ON' : 'OFF',
+      m.activityKey + (m.overridden ? ' (tuned)' : ''), featureList(m),
+      m.ceiling.toFixed(0), (m.factor*100).toFixed(1), (m.aiKbps + m.tlKbps).toFixed(1),
+      m.avgKbps.toFixed(0), m.peakKbps.toFixed(0), (m.avgKbps*m.qty/1000).toFixed(2),
+    ]));
+    rows.push(['Cameras', t.cams, '', '', '', '', '', '', '', '', t.avgMbps.toFixed(2)]);
+    rows.push(['Cameras archiving', t.archived]);
+    rows.push(['Sustained average (Mbps)', t.avgMbps.toFixed(1)]);
+    rows.push(['Busy-hour peak (Mbps)', t.peakMbps.toFixed(1)]);
+    rows.push(['If all saturate at once (Mbps)', t.ceilingMbps.toFixed(1)]);
+    rows.push(['Monthly volume (TB)', t.monthlyTB.toFixed(2)]);
+    rows.push(['RECOMMENDED UPLINK (Mbps)', t.ispMbps]);
+    rows.push([]);
+  });
+
+  rows.push(['PROJECT TOTALS']);
+  rows.push(['Location','Cameras','Archiving','Sustained (Mbps)','Peak (Mbps)','Monthly (TB)','Uplink (Mbps)']);
+  g.perLocation.forEach(t => rows.push([t.name, t.cams, t.archived,
+    t.avgMbps.toFixed(1), t.peakMbps.toFixed(1), t.monthlyTB.toFixed(2), t.ispMbps || '—']));
+  rows.push(['TOTAL', g.cams, g.archived, g.avgMbps.toFixed(1), g.peakMbps.toFixed(1),
+             g.monthlyTB.toFixed(2), g.ispTotalMbps]);
   rows.push([]);
-  rows.push(['Model basis','Measured Rhombus production traffic: VIDEO_AGENT_LOG encoder ladders (17 models) + 7-day hourly byte export (48 devices)']);
+  rows.push(['NOTE', `Uplink figures are per-location and size separate circuits. The ${g.ispTotalMbps} Mbps total is the sum of ${g.circuits} independent connection${g.circuits===1?'':'s'}, not one shared link.`]);
+  rows.push(['Model basis', BASIS]);
 
   const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
-  a.download = `rhombus-bandwidth-${new Date().toISOString().slice(0,10)}.csv`;
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = `${slug(projectName())}-bandwidth-${stamp}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
 }
 
 function copySummary() {
-  const t = totals();
+  const g = grandTotals();
+  const pad = (s,n) => String(s).padEnd(n);
   const lines = [
-    `Rhombus bandwidth estimate — ${new Date().toLocaleDateString()}`,
-    `Site: ${state.profile} activity, archiving ${state.archive ? 'on' : 'off'}`,
-    `${t.cams} cameras across ${t.models} models (${t.archived} archiving)`,
-    ``,
-    `Recommended uplink:  ${t.ispMbps} Mbps`,
-    `Busy-hour peak:      ${t.peakMbps.toFixed(1)} Mbps`,
-    `Sustained average:   ${t.avgMbps.toFixed(1)} Mbps`,
-    `All saturated:       ${t.ceilingMbps.toFixed(1)} Mbps`,
-    `Monthly volume:      ${t.monthlyTB.toFixed(2)} TB`,
-    ``,
-    `Per model:`,
-    ...activeRows().map(m =>
-      `  ${m.cam.model} x${m.qty} — ${Math.round(m.avgKbps)} kbps avg, ${Math.round(m.peakKbps)} peak` +
-      `  [${featureList(m)}${m.overridden ? `; ${m.activityKey} activity, tuned` : ''}]`),
+    `${projectName()} — Rhombus bandwidth estimate`,
+    `${new Date().toLocaleDateString()} · ${state.locations.length} location${state.locations.length===1?'':'s'} · ${g.circuits} circuit${g.circuits===1?'':'s'}`,
   ];
+  state.locations.forEach((l, li) => {
+    const t = g.perLocation[li];
+    lines.push('', `── ${l.name} ──`);
+    if (!t.cams) { lines.push('  (no cameras configured)'); return; }
+    lines.push(`  ${l.profile} activity, archiving ${l.archive ? 'on' : 'off'}`);
+    lines.push(`  ${t.cams} cameras across ${t.models} model${t.models===1?'':'s'} (${t.archived} archiving)`);
+    lines.push(`  Recommended uplink:  ${t.ispMbps} Mbps`);
+    lines.push(`  Busy-hour peak:      ${t.peakMbps.toFixed(1)} Mbps`);
+    lines.push(`  Sustained average:   ${t.avgMbps.toFixed(1)} Mbps`);
+    lines.push(`  Monthly volume:      ${t.monthlyTB.toFixed(2)} TB`);
+    rowsFor(li).forEach(m => lines.push(
+      `    ${pad(m.cam.model,6)} x${pad(m.qty,4)} ${Math.round(m.avgKbps)} kbps avg, ${Math.round(m.peakKbps)} peak` +
+      `  [${featureList(m)}${m.overridden ? `; ${m.activityKey}, tuned` : ''}]`));
+  });
+  if (g.circuits > 1) {
+    lines.push('', '── Project total ──');
+    lines.push(`  ${g.cams} cameras · ${g.monthlyTB.toFixed(2)} TB/month`);
+    lines.push(`  ${g.ispTotalMbps} Mbps across ${g.circuits} separate circuits (not one link)`);
+  }
   navigator.clipboard.writeText(lines.join('\n')).then(() => {
     const b = document.querySelector('.btn.ghost');
     const was = b.textContent; b.textContent = 'Copied';
     setTimeout(() => b.textContent = was, 1400);
   });
 }
+
+/* Print document — rebuilt before every print so it can never go stale, and
+   covering all locations since the screen only shows one. */
+function renderPrintDoc() {
+  const g = grandTotals();
+  const date = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const num = (k,v,u,key) => `<div class="p-num ${key?'key':''}">
+    <div class="k">${k}</div><div class="v">${v}</div><div class="u">${u}</div></div>`;
+
+  let html = `<div class="p-title">${esc(projectName())}</div>
+    <div class="p-meta">Rhombus upload bandwidth estimate &middot; ${date}
+      &middot; ${state.locations.length} location${state.locations.length===1?'':'s'}
+      &middot; ${g.circuits} circuit${g.circuits===1?'':'s'} required</div>`;
+
+  state.locations.forEach((l, li) => {
+    const t = g.perLocation[li];
+    html += `<div class="p-loc"><h3>${esc(l.name)}</h3>`;
+    if (!t.cams) {
+      html += `<p class="p-empty">No cameras configured at this location.</p></div>`;
+      return;
+    }
+    html += `<div class="p-sub">${l.profile} scene activity &middot;
+      cloud archiving ${l.archive ? 'on' : 'off'} site-wide
+      ${t.tuned ? `&middot; ${t.tuned} model${t.tuned===1?'':'s'} tuned individually` : ''}</div>
+      <div class="p-nums">
+        ${num('Recommended uplink', t.ispMbps, 'Mbps upload', true)}
+        ${num('Busy-hour peak', t.peakMbps.toFixed(1), 'Mbps')}
+        ${num('Sustained average', t.avgMbps.toFixed(1), 'Mbps')}
+        ${num('All saturated', t.ceilingMbps.toFixed(1), 'Mbps max')}
+        ${num('Monthly volume', t.monthlyTB.toFixed(2), 'TB')}
+      </div>
+      <table><thead><tr>
+        <th>Model</th><th class="r">Qty</th><th>Archive</th><th>Activity</th><th>Features</th>
+        <th class="r">Ceiling</th><th class="r">Avg/cam</th><th class="r">Peak/cam</th><th class="r">Subtotal</th>
+      </tr></thead><tbody>`;
+    rowsFor(li).forEach(m => {
+      html += `<tr>
+        <td><b>${m.cam.model}</b></td><td class="r">${m.qty}</td>
+        <td>${m.archive ? 'On' : 'Off'}</td>
+        <td>${m.activityKey}${m.overridden ? '*' : ''}</td>
+        <td style="font-size:8.5px;color:#666">${esc(featureList(m))}</td>
+        <td class="r">${m.ceiling.toLocaleString()}</td>
+        <td class="r">${Math.round(m.avgKbps).toLocaleString()}</td>
+        <td class="r">${Math.round(m.peakKbps).toLocaleString()}</td>
+        <td class="r"><b>${(m.avgKbps*m.qty/1000).toFixed(2)}</b></td></tr>`;
+    });
+    html += `<tr class="tot"><td>Total</td><td class="r">${t.cams}</td>
+      <td colspan="6" class="r">${t.avgMbps.toFixed(2)} Mbps sustained</td></tr>
+      </tbody></table>
+      ${t.tuned ? `<div style="font-size:8px;color:#888">* tuned away from this location's default</div>` : ''}
+      </div>`;
+  });
+
+  if (g.circuits > 1) {
+    html += `<div class="p-loc p-summary"><h3>Project summary</h3>
+      <div class="p-sub">Every location needs its own connection. The total below is a sum of
+        separate circuits, not a single shared link.</div>
+      <table><thead><tr><th>Location</th><th class="r">Cameras</th><th class="r">Archiving</th>
+        <th class="r">Sustained</th><th class="r">Peak</th><th class="r">Monthly</th>
+        <th class="r">Uplink</th></tr></thead><tbody>`;
+    g.perLocation.forEach(t => {
+      html += `<tr><td>${esc(t.name)}</td><td class="r">${t.cams || '—'}</td>
+        <td class="r">${t.cams ? t.archived : '—'}</td>
+        <td class="r">${t.cams ? t.avgMbps.toFixed(1)+' Mbps' : '—'}</td>
+        <td class="r">${t.cams ? t.peakMbps.toFixed(1)+' Mbps' : '—'}</td>
+        <td class="r">${t.cams ? t.monthlyTB.toFixed(2)+' TB' : '—'}</td>
+        <td class="r"><b>${t.ispMbps ? t.ispMbps+' Mbps' : '—'}</b></td></tr>`;
+    });
+    html += `<tr class="tot"><td>Total</td><td class="r">${g.cams}</td><td class="r">${g.archived}</td>
+      <td class="r">${g.avgMbps.toFixed(1)} Mbps</td><td class="r">${g.peakMbps.toFixed(1)} Mbps</td>
+      <td class="r">${g.monthlyTB.toFixed(2)} TB</td>
+      <td class="r">${g.ispTotalMbps} Mbps</td></tr></tbody></table>
+      <div style="font-size:8.5px;color:#666;margin-top:5px">
+        ${g.ispTotalMbps} Mbps across ${g.circuits} independent circuits.</div></div>`;
+  }
+
+  html += `<div class="p-method"><b>Method.</b> Each model has a measured encoder ceiling
+    (active tier x video sources). Sustained upload is that ceiling times a scene-activity factor
+    derived from 40 production cameras; busy-hour peak applies the measured p95/average ratio,
+    capped at the ceiling. Recommended uplink is peak x 1.3, rounded up to the nearest 50 Mbps.
+    Cloud archiving on/off is the dominant variable &mdash; an 18x median swing in the reference
+    fleet. AI feature overhead is an unvalidated estimate. Recommended speeds exclude non-Rhombus
+    traffic sharing the same uplink.<br><b>Basis.</b> ${BASIS}.</div>`;
+
+  document.getElementById('print-doc').innerHTML = html;
+}
+
+function printDoc() { renderPrintDoc(); window.print(); }
 
 /* ── theme ──────────────────────────────────────────────────────────────── */
 function flipTheme() {
@@ -684,24 +995,35 @@ function flipTheme() {
 
 /* ── render ─────────────────────────────────────────────────────────────── */
 function render() {
-  document.querySelectorAll('.opt').forEach(o => o.classList.toggle('on', o.dataset.k === state.profile));
-  document.getElementById('archsw').className = 'bigsw' + (state.archive ? ' on' : '');
-  document.getElementById('archsw').setAttribute('aria-checked', state.archive);
-  document.getElementById('archrow').className = 'archrow' + (state.archive ? ' on' : '');
+  const L = loc();
+  buildLocbar();
+  document.getElementById('at-loc').textContent =
+    state.locations.length > 1 ? `at ${L.name}` : '';
+  document.getElementById('result-scope').textContent =
+    state.locations.length > 1 ? `${L.name} — this site's own circuit.` : '';
 
-  const tunedArch = CAMERAS.filter((_, i) => state.cams[i].archive !== null).length;
-  document.getElementById('archscope').innerHTML = (state.archive
-    ? 'On for every model — the realistic default for Enterprise sites.'
-    : 'Off for every model — event-only upload, roughly 18&times; lower.')
+  document.querySelectorAll('.opt').forEach(o => o.classList.toggle('on', o.dataset.k === L.profile));
+  document.getElementById('archsw').className = 'bigsw' + (L.archive ? ' on' : '');
+  document.getElementById('archsw').setAttribute('aria-checked', L.archive);
+  document.getElementById('archrow').className = 'archrow' + (L.archive ? ' on' : '');
+
+  const tunedArch = CAMERAS.filter((_, i) => L.cams[i].archive !== null).length;
+  document.getElementById('archscope').innerHTML = (L.archive
+    ? 'On for every model at this location — the realistic default for Enterprise sites.'
+    : 'Off for every model at this location — event-only upload, roughly 18&times; lower.')
     + (tunedArch ? ` <b>${tunedArch} model${tunedArch===1?'':'s'} overriding this.</b>` : '');
 
+  // Site-wide AI pills reflect this location, so switching sites shows its state.
+  AI_KEYS.forEach(k => siteAI[k] = L.cams.every(c => c.toggles[k]));
   document.querySelectorAll('.fpill').forEach(p => p.classList.toggle('on', siteAI[p.dataset.k]));
 
   CAMERAS.forEach((cam, i) => {
     const row = document.querySelector(`.pick[data-i="${i}"]`);
     if (!row) return;
-    const m = camMetrics(i), c = state.cams[i];
+    const m = camMetrics(i), c = L.cams[i];
     row.classList.toggle('live', m.qty > 0);
+    const q = document.getElementById('q'+i);
+    if (q && document.activeElement !== q && +q.value !== c.qty) q.value = c.qty;
 
     document.getElementById('bdg'+i).innerHTML = m.overridden ? '<span class="badge">tuned</span>' : '';
     document.getElementById('st'+i).textContent =
@@ -723,9 +1045,12 @@ function render() {
   });
 
   renderResult();
+  renderRollup();
 }
 
 try { if (localStorage.getItem('bw-theme') === 'dark') flipTheme(); } catch(e) {}
+load();                                   // restore saved project, if any
+document.getElementById('title').value = state.title;
 buildOpts();
 buildRef();
 buildPicks();
