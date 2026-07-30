@@ -338,6 +338,46 @@
   .anim { animation:up .55s cubic-bezier(.2,.7,.3,1) both; }
   @media (prefers-reduced-motion:reduce) { .anim{animation:none} *{transition:none!important} }
 
+  /* ── layout ────────────────────────────────────────────────────────────────
+     Mobile is the base case: the two rails are display:contents, so their
+     children flow directly in .shell in source order and the page reads as one
+     column. Above 1000px the rails become real grid columns — config on the
+     left, output on the right with the result panel pinned — so the answer stays
+     on screen while quantities are being set. */
+  .cols { display:contents; }
+  .col-main, .col-rail { display:contents; }
+
+  @media (min-width:1000px) {
+    .shell { max-width:1280px; }
+    .cols {
+      display:grid; grid-template-columns:minmax(0,1fr) minmax(330px,404px);
+      gap:16px; align-items:start;
+    }
+    .col-main, .col-rail { display:flex; flex-direction:column; gap:15px; min-width:0; }
+    .card + .card { margin-top:0; }        /* gap owns the spacing in grid mode */
+    /* The whole rail pins, not just the result card. Pinning the card alone can
+       never work here: it is taller than the travel available inside the rail, so
+       it always slid away before the config column finished scrolling. Capping
+       the rail to the viewport and letting it scroll internally keeps the number
+       reachable at any scroll position and on any window height. */
+    .col-rail {
+      position:sticky; top:16px;
+      max-height:calc(100vh - 32px);
+      overflow-y:auto; overscroll-behavior:contain;
+      padding-right:4px; scrollbar-width:thin;
+    }
+    /* Same trap as .pick: a capped-height flex column shrinks its children to
+       fit unless told not to. Without this the rail's cards collapse. */
+    .col-rail > * { flex:none; }
+    .picks { max-height:min(58vh,520px); }
+    .facts { grid-template-columns:1fr 1fr; }
+  }
+
+  @media (min-width:1500px) {
+    .shell { max-width:1420px; }
+    .cols { grid-template-columns:minmax(0,1fr) 440px; gap:20px; }
+  }
+
   @media (max-width:480px) {
     .facts { grid-template-columns:1fr; }
     .hero .v { font-size:4.2rem; }
@@ -426,6 +466,9 @@
     <div class="pip" id="pip2"><i></i></div>
   </div>
 
+  <div class="cols">
+  <div class="col-main">
+
   <div class="card anim" style="animation-delay:.1s">
     <div class="c-hd">
       <span class="n">STEP ONE</span>
@@ -467,7 +510,10 @@
     </details>
   </div>
 
-  <div class="card anim" style="animation-delay:.2s">
+  </div><!-- /col-main -->
+  <div class="col-rail">
+
+  <div class="card anim card--result" style="animation-delay:.2s">
     <div class="c-hd">
       <span class="n">STEP THREE</span>
       <h2>Size the connection</h2>
@@ -509,6 +555,9 @@
       assumed.</p>
     </details>
   </div>
+
+  </div><!-- /col-rail -->
+  </div><!-- /cols -->
 
   <div class="foot">
     <p><b>Provenance.</b> Encoder ladders come from <code>VIDEO_AGENT_LOG</code> dash-quality
