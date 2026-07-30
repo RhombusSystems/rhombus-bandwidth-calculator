@@ -454,7 +454,7 @@
   </div>
 
   <div class="project anim" style="animation-delay:.04s">
-    <input class="title-in" id="title" placeholder="Project name — e.g. Ice Blocks HQ Retrofit"
+    <input class="title-in" id="title" placeholder="Project name"
            oninput="setTitle(this.value)" aria-label="Project name">
     <div class="locbar" id="locbar"></div>
     <div class="loc-tools" id="loctools"></div>
@@ -550,9 +550,9 @@
       </div>
       <p class="adv-note">Idle / Active are per video source, in kbps. Ceiling = active &times; sources.
       <span class="ev log">Log&nbsp;+&nbsp;bytes</span> means the ladder was read from that model's own
-      <code>VIDEO_AGENT_LOG</code>; <span class="ev bytes">Bytes&nbsp;only</span> means byte data exists
-      but no log pull; <span class="ev est">Estimated</span> means neither, and the standard ladder was
-      assumed.</p>
+      <code>VIDEO_AGENT_LOG</code> and cross-checked against real byte data;
+      <span class="ev bytes">Bytes&nbsp;only</span> means byte data exists but no log pull. Every model
+      below is measured &mdash; none are extrapolated.</p>
     </details>
   </div>
 

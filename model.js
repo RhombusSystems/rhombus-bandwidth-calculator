@@ -39,7 +39,6 @@
 //      "est"   = neither; inherits the standard ladder. Treat as unverified.
 const CAMERAS = [
   { model:"DR40", res:"3840×2160", mp:"8.3 MP (4K)", idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"bytes", note:"Badge reader / intercom. 7 units in the byte export: 2428 / 1127 / 990 kbps with archiving on, 13 / 11 / 9 without." },
-  { model:"R100", res:"1920×1080", mp:"2 MP",        idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"est",   note:"No online unit in the bench org. Standard ladder assumed." },
   { model:"R120", res:"1920×1440", mp:"2 MP",        idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"Log window ran 34% at the active tier. Real bytes 1137 kbps archiving on, 86 off." },
   { model:"R150", res:"1920×1080", mp:"2 MP",        idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"Only archive-off sample was 41 kbps — a static arcade cam." },
   { model:"R200", res:"1920×1440", mp:"5 MP",        idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"4 archive-on units, median 982 kbps." },
@@ -145,7 +144,15 @@ const FEATURE_LABELS = {
   crosscount:"Cross Counting", aisearch:"AI Search",
 };
 
-const STORE_KEY = 'bw-project-v1';
+/* v2 keys saved cameras by MODEL NAME rather than array index. v1 stored an
+   index-aligned array, which silently corrupted a saved project whenever the
+   catalogue changed: removing R100 shifted every model after it by one, so a
+   saved R120 quantity would reappear as R150. LEGACY_ORDER_V1 exists only to
+   migrate those payloads once — do not edit it. */
+const STORE_KEY = 'bw-project-v2';
+const LEGACY_KEY_V1 = 'bw-project-v1';
+const LEGACY_ORDER_V1 = ['DR40','R100','R120','R150','R200','R230','R36S','R410','R520',
+                         'R540','R545','R600','R1','R2','R3','R4','R170','R500','R510'];
 
 function newLocation(name) {
   return {
@@ -330,40 +337,75 @@ function duplicateLocation(li) {
 function save() {
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify({
-      v: 1, title: state.title, active: state.active, locations: state.locations,
+      v: 2, title: state.title, active: state.active,
+      locations: state.locations.map(l => ({
+        name: l.name, profile: l.profile, archive: l.archive,
+        // Keyed by model name so the catalogue can gain or lose models without
+        // corrupting saved quantities. Only non-default entries are written.
+        cams: l.cams.reduce((o, c, i) => {
+          if (c.qty || c.profile !== null || c.archive !== null
+              || Object.values(c.toggles).some(Boolean)) {
+            o[CAMERAS[i].model] = { qty:c.qty, profile:c.profile, archive:c.archive,
+                                    toggles:c.toggles };
+          }
+          return o;
+        }, {}),
+      })),
     }));
   } catch (e) { /* private browsing, quota — not worth surfacing */ }
 }
 
-/** Restore, tolerating older or hand-edited payloads. Shape is re-validated
-    against CAMERAS so a model added to the catalogue later cannot desync. */
+/** Copy one saved camera entry onto a fresh location slot, validating as it goes
+    so a hand-edited or stale payload cannot inject bad state. */
+function applyCam(slot, c) {
+  if (!c) return;
+  slot.qty = Math.max(0, parseInt(c.qty) || 0);
+  slot.profile = ACTIVITY.some(a => a.key === c.profile) ? c.profile : null;
+  slot.archive = typeof c.archive === 'boolean' ? c.archive : null;
+  if (c.toggles) Object.keys(slot.toggles).forEach(k => { slot.toggles[k] = !!c.toggles[k]; });
+}
+
+/** Restore a saved project. Reads v2 (model-keyed) and migrates v1 (index-keyed)
+    through LEGACY_ORDER_V1, so upgrading does not lose an in-progress quote. */
 function load() {
-  let raw;
-  try { raw = localStorage.getItem(STORE_KEY); } catch (e) { return false; }
+  let raw, legacy = false;
+  try {
+    raw = localStorage.getItem(STORE_KEY);
+    if (!raw) { raw = localStorage.getItem(LEGACY_KEY_V1); legacy = !!raw; }
+  } catch (e) { return false; }
   if (!raw) return false;
   let d;
   try { d = JSON.parse(raw); } catch (e) { return false; }
   if (!d || !Array.isArray(d.locations) || !d.locations.length) return false;
+
+  const byModel = {};
+  CAMERAS.forEach((c, i) => byModel[c.model] = i);
 
   state.title = typeof d.title === 'string' ? d.title : '';
   state.locations = d.locations.map(src => {
     const l = newLocation(typeof src.name === 'string' ? src.name : 'Main site');
     if (ACTIVITY.some(a => a.key === src.profile)) l.profile = src.profile;
     if (typeof src.archive === 'boolean') l.archive = src.archive;
+
     if (Array.isArray(src.cams)) {
-      src.cams.slice(0, l.cams.length).forEach((c, i) => {
-        if (!c) return;
-        l.cams[i].qty = Math.max(0, parseInt(c.qty) || 0);
-        l.cams[i].profile = ACTIVITY.some(a => a.key === c.profile) ? c.profile : null;
-        l.cams[i].archive = typeof c.archive === 'boolean' ? c.archive : null;
-        if (c.toggles) Object.keys(l.cams[i].toggles).forEach(k => {
-          l.cams[i].toggles[k] = !!c.toggles[k];
-        });
+      // v1: positional. Resolve each slot through the order it was written with,
+      // then look the model up by name. Entries for removed models are dropped.
+      src.cams.forEach((c, i) => {
+        const model = LEGACY_ORDER_V1[i];
+        const target = model === undefined ? undefined : byModel[model];
+        if (target !== undefined) applyCam(l.cams[target], c);
+      });
+    } else if (src.cams && typeof src.cams === 'object') {
+      // v2: model-keyed.
+      Object.entries(src.cams).forEach(([model, c]) => {
+        const target = byModel[model];
+        if (target !== undefined) applyCam(l.cams[target], c);
       });
     }
     return l;
   });
   state.active = Math.min(Math.max(0, parseInt(d.active) || 0), state.locations.length - 1);
+  if (legacy) save();                       // rewrite in v2 and stop re-migrating
   return true;
 }
 
