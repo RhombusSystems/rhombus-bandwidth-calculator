@@ -256,7 +256,10 @@ function totals(li) {
     tl += m.tlKbps * m.qty;
     ai += m.aiKbps * m.qty;
     peak += m.peakKbps * m.qty;
-    ceiling += m.ceiling * m.qty;
+    // "All saturated" must include the always-on timelapse stream and AI
+    // metadata, else it can read below the busy-hour peak (which does include
+    // them) — a camera's true simultaneous max is video ceiling + TL + AI.
+    ceiling += (m.ceiling + m.tlKbps + m.aiKbps) * m.qty;
     if (m.archive) archived += m.qty;
     if (m.overridden) tuned++;
   });
