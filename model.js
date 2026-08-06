@@ -201,8 +201,13 @@ function archiveFor(idx, li) {
 
 /** True when this model differs from its location's defaults. */
 function isOverridden(idx, li) {
-  const c = loc(li).cams[idx];
-  return c.profile !== null || c.archive !== null;
+  const l = loc(li), c = l.cams[idx];
+  if (c.profile !== null || c.archive !== null) return true;
+  // Feature-tuned: a toggle differs from the site consensus, where a feature is
+  // site-wide "on" only when every camera carries it — the same rule the pills
+  // use. ponytail: mislabels which cams in the rare site-on-then-exclude-one
+  // flow; give features a null=inherit model like profile/archive to fix fully.
+  return Object.keys(c.toggles).some(k => c.toggles[k] !== l.cams.every(x => x.toggles[k]));
 }
 
 function getOverhead(feat, idx, li) {
