@@ -4,7 +4,7 @@ A dependency-free browser calculator for estimating Rhombus camera upload bandwi
 
 ## Model basis
 
-- Encoder ceilings come from `VIDEO_AGENT_LOG` dash-quality transitions collected from one online unit of each of 17 models.
+- Encoder ceilings for 17 of the 18 models come from `VIDEO_AGENT_LOG` dash-quality transitions on one online unit of each. The DR40 uses the standard ladder, checked against the byte export.
 - Activity factors and peak ratios come from a seven-day hourly export covering 41 cameras and seven DR40 readers; 40 cameras contributed to the activity bands.
 - Cloud archiving, scene activity, video-source count, timelapse, and selected AI features feed the estimate.
 - The 30% sizing reserve covers protocol overhead and retransmits. It does not reserve bandwidth for unrelated site traffic.
