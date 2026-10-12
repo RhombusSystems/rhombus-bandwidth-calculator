@@ -52,10 +52,10 @@ const CAMERAS = [
   { model:"R1",   res:"1280×720",  mp:"0.9 MP",      idleKbps:360,  activeKbps:720,  vsrc:1, sold:false, legacy:true,  src:"log",   note:"Legacy firmware logs 'setting single stream' — one encoder feeds local and cloud." },
   { model:"R2",   res:"1920×1080", mp:"5 MP sensor, 1080p",        idleKbps:786,  activeKbps:1967, vsrc:1, sold:false, legacy:true,  src:"log",   note:"Legacy single-stream ladder. 756 kbps archiving on, 6 off." },
   { model:"R3",   res:"3008×3008", mp:"9 MP (360°)", idleKbps:1200, activeKbps:3000, vsrc:1, sold:false, legacy:true,  src:"log",   note:"4 archive-on units, median 888 kbps." },
-  { model:"R4",   res:"3840×2160", mp:"8.3 MP (4K)", idleKbps:1200, activeKbps:3000, vsrc:1, sold:false, legacy:true,  src:"log",   note:"Widest spread in the fleet: 2023 kbps at a front door, 4 kbps in a server room." },
+  { model:"R4",   res:"3840×2160", mp:"8 MP (4K)", idleKbps:1200, activeKbps:3000, vsrc:1, sold:false, legacy:true,  src:"log",   note:"Widest spread in the fleet: 2023 kbps at a front door, 4 kbps in a server room." },
   { model:"R170", res:"1920×1080", mp:"2 MP",        idleKbps:1200, activeKbps:3000, vsrc:1, sold:false, legacy:true,  src:"log",   note:"Only sample had archiving off: 91 kbps against a 3000 kbps ceiling." },
-  { model:"R500", res:"3840×2160", mp:"8.3 MP (4K)", idleKbps:1146, activeKbps:2867, vsrc:1, sold:false, legacy:true,  src:"log",   note:"Scaled ladder. Parking entrance with 120 d archiving: 1582 kbps." },
-  { model:"R510", res:"3840×2160", mp:"8.3 MP (4K)", idleKbps:748,  activeKbps:1871, vsrc:1, sold:false, legacy:true,  src:"log",   note:"Lowest ladder of the 4K line. 3 archive-on units averaged 1436 kbps — near ceiling." },
+  { model:"R500", res:"3840×2160", mp:"8 MP (4K)", idleKbps:1146, activeKbps:2867, vsrc:1, sold:false, legacy:true,  src:"log",   note:"Scaled ladder. Parking entrance with 120 d archiving: 1582 kbps." },
+  { model:"R510", res:"3840×2160", mp:"8 MP (4K)", idleKbps:748,  activeKbps:1871, vsrc:1, sold:false, legacy:true,  src:"log",   note:"Lowest ladder of the 4K line. 3 archive-on units averaged 1436 kbps — near ceiling." },
 ];
 
 /* Scene activity: fraction of the model's ceiling actually uploaded.
