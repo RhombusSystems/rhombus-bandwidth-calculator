@@ -39,10 +39,10 @@
 //      "est"   = neither; inherits the standard ladder. Treat as unverified.
 const CAMERAS = [
   { model:"DR40", res:"3840×2160", mp:"8.3 MP (4K)", idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"bytes", note:"Badge reader / intercom. 7 units in the byte export: 2428 / 1127 / 990 kbps with archiving on, 13 / 11 / 9 without." },
-  { model:"R120", res:"1920×1440", mp:"2 MP",        idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"Log window ran 34% at the active tier. Real bytes 1137 kbps archiving on, 86 off." },
+  { model:"R120", res:"1920×1080", mp:"2 MP",        idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"Log window ran 34% at the active tier. Real bytes 1137 kbps archiving on, 86 off." },
   { model:"R150", res:"1920×1080", mp:"2 MP",        idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"Only archive-off sample was 41 kbps — a static arcade cam." },
-  { model:"R200", res:"1920×1440", mp:"5 MP",        idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"4 archive-on units, median 982 kbps." },
-  { model:"R230", res:"2592×1944", mp:"3.8 MP",      idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"3 archive-off units at 16 kbps median — stairwells and exits." },
+  { model:"R200", res:"2592×1944", mp:"5 MP",        idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"4 archive-on units, median 982 kbps." },
+  { model:"R230", res:"2592×1456", mp:"3.8 MP",      idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"3 archive-off units at 16 kbps median — stairwells and exits." },
   { model:"R36S", res:"3520×3520", mp:"12.4 MP (360°)", idleKbps:1200, activeKbps:3000, vsrc:1, sold:true, legacy:false, src:"log", note:"1743 kbps on a busy street with archiving; 398 median without." },
   { model:"R410", res:"3840×2160", mp:"8.3 MP (4K)", idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"Best log-to-bytes agreement in the set: 1640 predicted vs 1865 actual." },
   { model:"R520", res:"2592×1944", mp:"5 MP",        idleKbps:1200, activeKbps:3000, vsrc:1, sold:true,  legacy:false, src:"log",   note:"1155 kbps archiving on, 169 median off." },
@@ -77,7 +77,7 @@ const ACTIVITY = [
    sizing; the result is capped at the ceiling, which no average can exceed. */
 const PEAK_RATIO = { on: 2.18, off: 2.99 };
 
-/* AI event-metadata overhead, kbps per camera.
+/* AI event-metadata overhead, kbps per video source.
 
    IMPORTANT: unlike the ceiling and activity figures above, these are NOT
    validated. The byte export reports one total per device, so per-feature cost
@@ -111,7 +111,7 @@ const FEATURES = [
 ];
 
 // "archive" and "timelapse" are handled structurally, not as additive overhead.
-const TOGGLE_COLS = ["archive","timelapse","faceRecog","lpr","ppe","peopleocc","crosscount","aisearch"];
+const FEATURE_KEYS = ["timelapse","faceRecog","lpr","ppe","peopleocc","crosscount","aisearch"];
 const OVERHEAD_MAP = {
   faceRecog:  FEATURES.find(f=>f.name==="Face Recognition"),
   lpr:        FEATURES.find(f=>f.name==="LPR"),
@@ -149,7 +149,8 @@ const FEATURE_LABELS = {
    catalogue changed: removing R100 shifted every model after it by one, so a
    saved R120 quantity would reappear as R150. LEGACY_ORDER_V1 exists only to
    migrate those payloads once — do not edit it. */
-const STORE_KEY = 'bw-project-v2';
+const STORE_KEY = 'bw-project-v3';
+const LEGACY_KEY_V2 = 'bw-project-v2';
 const LEGACY_KEY_V1 = 'bw-project-v1';
 const LEGACY_ORDER_V1 = ['DR40','R100','R120','R150','R200','R230','R36S','R410','R520',
                          'R540','R545','R600','R1','R2','R3','R4','R170','R500','R510'];
@@ -161,12 +162,12 @@ function newLocation(name) {
     // Archiving defaults on: it ships with Enterprise at 30 days, and 27 of the
     // 40 cameras in the reference fleet have it enabled.
     archive: true,
+    features: Object.fromEntries(FEATURE_KEYS.map(k => [k, false])),
     cams: CAMERAS.map(() => ({
       qty: 0,
       profile: null,   // null = inherit this location's activity
       archive: null,   // null = inherit this location's archiving
-      toggles: { timelapse:false, faceRecog:false, lpr:false,
-                 ppe:false, peopleocc:false, crosscount:false, aisearch:false },
+      toggles: Object.fromEntries(FEATURE_KEYS.map(k => [k, null])),
     })),
   };
 }
@@ -199,15 +200,17 @@ function archiveFor(idx, li) {
   return o === null ? l.archive : o;
 }
 
+/** Effective feature state for one model. A null camera value inherits the site. */
+function featureFor(idx, key, li) {
+  const l = loc(li), value = l.cams[idx].toggles[key];
+  return value === null ? !!l.features[key] : !!value;
+}
+
 /** True when this model differs from its location's defaults. */
 function isOverridden(idx, li) {
   const l = loc(li), c = l.cams[idx];
   if (c.profile !== null || c.archive !== null) return true;
-  // Feature-tuned: a toggle differs from the site consensus, where a feature is
-  // site-wide "on" only when every camera carries it — the same rule the pills
-  // use. ponytail: mislabels which cams in the rare site-on-then-exclude-one
-  // flow; give features a null=inherit model like profile/archive to fix fully.
-  return Object.keys(c.toggles).some(k => c.toggles[k] !== l.cams.every(x => x.toggles[k]));
+  return FEATURE_KEYS.some(k => c.toggles[k] !== null);
 }
 
 function getOverhead(feat, idx, li) {
@@ -217,14 +220,13 @@ function getOverhead(feat, idx, li) {
 
 function calcAIOverhead(idx, li) {
   let oh = getOverhead(OBJ_SEARCH, idx, li);
-  const t = loc(li).cams[idx].toggles;
-  for (const key of TOGGLE_COLS) {
-    if (t[key] && OVERHEAD_MAP[key]) {
+  for (const key of FEATURE_KEYS) {
+    if (featureFor(idx, key, li) && OVERHEAD_MAP[key]) {
       oh += getOverhead(OVERHEAD_MAP[key], idx, li);
       if (key === "peopleocc") oh += getOverhead(OCC_OVERHEAD, idx, li);
     }
   }
-  return oh;
+  return oh * CAMERAS[idx].vsrc;
 }
 
 /** Everything a view needs about one model row at one location. */
@@ -234,7 +236,7 @@ function camMetrics(idx, li) {
   const archive = archiveFor(idx, li);
   const factor  = archive ? act.archOn : act.archOff;
   const aiKbps  = calcAIOverhead(idx, li);
-  const tlKbps  = s.toggles.timelapse ? cam.idleKbps : 0;
+  const tlKbps  = featureFor(idx, "timelapse", li) ? cam.idleKbps * cam.vsrc : 0;
   const videoAvg = ceiling * factor;
   // Peak: average scaled by the observed p95/avg ratio, but a camera can never
   // exceed its own encoder ceiling.
@@ -244,7 +246,7 @@ function camMetrics(idx, li) {
     videoAvg, videoPeak, activityKey: act.key, overridden: isOverridden(idx, li),
     avgKbps: videoAvg + aiKbps + tlKbps,
     peakKbps: videoPeak + aiKbps + tlKbps,
-    activeFeatures: TOGGLE_COLS.filter(k => s.toggles[k]),
+    activeFeatures: FEATURE_KEYS.filter(k => featureFor(idx, k, li)),
   };
 }
 
@@ -276,8 +278,8 @@ function totals(li) {
     avgMbps: avgKbps / 1000,
     peakMbps,
     ceilingMbps: ceiling / 1000,
-    // Size the link off measured peak, then add 30% for protocol overhead,
-    // retransmits and non-camera traffic sharing the uplink.
+    // Size the link off measured peak, then add 30% for protocol overhead and
+    // retransmits. Capacity for unrelated site traffic is not included.
     ispMbps: cams ? Math.ceil(peakMbps * 1.3 / 50) * 50 : 0,
     monthlyTB: avgKbps * 1000 / 8 * MONTH_SECS / 1e12,
     split: avgKbps > 0
@@ -306,15 +308,31 @@ function grandTotals() {
 
 /* ── mutations ─────────────────────────────────────────────────────────────── */
 function setProfile(p)     { loc().profile = p; commit(); }
-function setQty(i, v)      { loc().cams[i].qty = Math.max(0, parseInt(v) || 0); commit(); }
-function toggle(i, k)      { loc().cams[i].toggles[k] = !loc().cams[i].toggles[k]; commit(); }
+const MAX_QTY = 100000;
+function normaliseQty(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.min(MAX_QTY, Math.max(0, Math.trunc(n))) : 0;
+}
+function setQty(i, v)      { loc().cams[i].qty = normaliseQty(v); commit(); }
+function incrementQty(i,d) { setQty(i, loc().cams[i].qty + d); }
+function toggle(i, k) {
+  if (!FEATURE_KEYS.includes(k)) return;
+  const next = !featureFor(i, k);
+  loc().cams[i].toggles[k] = next === loc().features[k] ? null : next;
+  commit();
+}
+function setSiteFeature(k, enabled) {
+  if (!FEATURE_KEYS.includes(k)) return;
+  loc().features[k] = !!enabled;
+  commit();
+}
 function setSiteArchive(a) { loc().archive = a; commit(); }
 function setCamProfile(i,p){ loc().cams[i].profile = p; commit(); }   // null = inherit
 function setCamArchive(i,a){ loc().cams[i].archive = a; commit(); }   // null = inherit
 function clearOverride(i) {
   const c = loc().cams[i];
   c.profile = null; c.archive = null;
-  Object.keys(c.toggles).forEach(k => c.toggles[k] = false);
+  FEATURE_KEYS.forEach(k => c.toggles[k] = null);
   commit();
 }
 function setTitle(t) { state.title = t; save(); }
@@ -345,16 +363,18 @@ function duplicateLocation(li) {
 function save() {
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify({
-      v: 2, title: state.title, active: state.active,
+      v: 3, title: state.title, active: state.active,
       locations: state.locations.map(l => ({
-        name: l.name, profile: l.profile, archive: l.archive,
+        name: l.name, profile: l.profile, archive: l.archive, features: l.features,
         // Keyed by model name so the catalogue can gain or lose models without
         // corrupting saved quantities. Only non-default entries are written.
         cams: l.cams.reduce((o, c, i) => {
           if (c.qty || c.profile !== null || c.archive !== null
-              || Object.values(c.toggles).some(Boolean)) {
+              || FEATURE_KEYS.some(k => c.toggles[k] !== null)) {
             o[CAMERAS[i].model] = { qty:c.qty, profile:c.profile, archive:c.archive,
-                                    toggles:c.toggles };
+              toggles:Object.fromEntries(FEATURE_KEYS
+                .filter(k => c.toggles[k] !== null)
+                .map(k => [k, c.toggles[k]])) };
           }
           return o;
         }, {}),
@@ -365,21 +385,25 @@ function save() {
 
 /** Copy one saved camera entry onto a fresh location slot, validating as it goes
     so a hand-edited or stale payload cannot inject bad state. */
-function applyCam(slot, c) {
+function applyCam(slot, c, legacyToggles = false) {
   if (!c) return;
-  slot.qty = Math.max(0, parseInt(c.qty) || 0);
+  slot.qty = normaliseQty(c.qty);
   slot.profile = ACTIVITY.some(a => a.key === c.profile) ? c.profile : null;
   slot.archive = typeof c.archive === 'boolean' ? c.archive : null;
-  if (c.toggles) Object.keys(slot.toggles).forEach(k => { slot.toggles[k] = !!c.toggles[k]; });
+  if (c.toggles) FEATURE_KEYS.forEach(k => {
+    if (legacyToggles) slot.toggles[k] = !!c.toggles[k];
+    else slot.toggles[k] = typeof c.toggles[k] === 'boolean' ? c.toggles[k] : null;
+  });
 }
 
 /** Restore a saved project. Reads v2 (model-keyed) and migrates v1 (index-keyed)
     through LEGACY_ORDER_V1, so upgrading does not lose an in-progress quote. */
 function load() {
-  let raw, legacy = false;
+  let raw, source = 'v3';
   try {
     raw = localStorage.getItem(STORE_KEY);
-    if (!raw) { raw = localStorage.getItem(LEGACY_KEY_V1); legacy = !!raw; }
+    if (!raw) { raw = localStorage.getItem(LEGACY_KEY_V2); source = 'v2'; }
+    if (!raw) { raw = localStorage.getItem(LEGACY_KEY_V1); source = 'v1'; }
   } catch (e) { return false; }
   if (!raw) return false;
   let d;
@@ -395,25 +419,40 @@ function load() {
     if (ACTIVITY.some(a => a.key === src.profile)) l.profile = src.profile;
     if (typeof src.archive === 'boolean') l.archive = src.archive;
 
+    if (source === 'v3' && src.features && typeof src.features === 'object') {
+      FEATURE_KEYS.forEach(k => { l.features[k] = !!src.features[k]; });
+    }
+
     if (Array.isArray(src.cams)) {
       // v1: positional. Resolve each slot through the order it was written with,
       // then look the model up by name. Entries for removed models are dropped.
       src.cams.forEach((c, i) => {
         const model = LEGACY_ORDER_V1[i];
         const target = model === undefined ? undefined : byModel[model];
-        if (target !== undefined) applyCam(l.cams[target], c);
+        if (target !== undefined) applyCam(l.cams[target], c, true);
       });
     } else if (src.cams && typeof src.cams === 'object') {
-      // v2: model-keyed.
+      // v2/v3: model-keyed.
       Object.entries(src.cams).forEach(([model, c]) => {
         const target = byModel[model];
-        if (target !== undefined) applyCam(l.cams[target], c);
+        if (target !== undefined) applyCam(l.cams[target], c, source !== 'v3');
+      });
+    }
+
+    if (source !== 'v3') {
+      // Old payloads stored effective booleans on every camera. Promote a value
+      // shared by the entire catalogue to the site default, retaining only real
+      // per-camera differences as overrides.
+      FEATURE_KEYS.forEach(k => {
+        const siteValue = l.cams.every(c => c.toggles[k] === true);
+        l.features[k] = siteValue;
+        l.cams.forEach(c => { c.toggles[k] = c.toggles[k] === siteValue ? null : c.toggles[k]; });
       });
     }
     return l;
   });
   state.active = Math.min(Math.max(0, parseInt(d.active) || 0), state.locations.length - 1);
-  if (legacy) save();                       // rewrite in v2 and stop re-migrating
+  if (source !== 'v3') save();              // rewrite once and stop re-migrating
   return true;
 }
 
